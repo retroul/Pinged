@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+  <title>Pinged: Discord updates and experiments</title>
+  <link>https://retroul.github.io/Pinged/</link>
+  <description>Discord changelogs and experiments, collected by Pinged, the unofficial Discord field guide.</description>
+  <language>en</language>
+  <lastBuildDate>Wed, 21 Oct 2026 12:00:00 GMT</lastBuildDate>
+  <item>
+    <title>Update: Patch notes</title>
+    <link>https://retroul.github.io/Pinged/#/updates/2026-10-06-patch-notes</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/updates/2026-10-06-patch-notes</guid>
+    <pubDate>Tue, 06 Oct 2026 12:00:00 GMT</pubDate>
+    <description>Images and videos now go through a media engine rewritten in Rust: faster resizing, better colour. &quot;Show spoiler content&quot; setting now on mobile. Stage channels: Picture-in-Picture and Text-in-Voice at the same time. Shift-click a GIF to put its link in your message without sending; right-click to copy it. Desktop DM privacy settings show which servers override &quot;All Servers&quot;. Screen readers announce a friend's voice or activity status in DM headers (mobile).</description>
+  </item>
+  <item>
+    <title>Update: Halloween: Cauldron Chaos</title>
+    <link>https://retroul.github.io/Pinged/#/updates/2026-10-01-halloween-cauldron-chaos</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/updates/2026-10-01-halloween-cauldron-chaos</guid>
+    <pubDate>Thu, 01 Oct 2026 12:00:00 GMT</pubDate>
+    <description>Collect four Cauldron Chaos Shop items by Oct 14 to unlock a fifth exclusive one. Gift Nitro by Nov 3 to get a Hex, Crowseph or Umbra avatar decoration. Limited app icon, loading animation and ringtone.</description>
+  </item>
+  <item>
+    <title>Update: September changelog</title>
+    <link>https://retroul.github.io/Pinged/#/updates/2026-09-25-september-changelog</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/updates/2026-09-25-september-changelog</guid>
+    <pubDate>Fri, 25 Sep 2026 12:00:00 GMT</pubDate>
+    <description>System-wide echo cancellation on Windows (removes game and music audio from your mic). New Nitro display-name fonts and the Gummy and Prism name effects. Trending Games genre filters, and @game mentions on mobile. Discord Town Hall server revamped as the home for product news. Edit server tags on mobile; bulk-leave inactive group DMs. Controls for friend-online notifications. Mobile visual refresh: classic dark theme is back, circular avatars.</description>
+  </item>
+  <item>
+    <title>Update: Community-requested features</title>
+    <link>https://retroul.github.io/Pinged/#/updates/2026-09-16-community-requested-features</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/updates/2026-09-16-community-requested-features</guid>
+    <pubDate>Wed, 16 Sep 2026 12:00:00 GMT</pubDate>
+    <description>Pin DMs on desktop; pin channels in any server. Open profile pictures full size; &quot;Friends Since&quot; on profiles. Profile bios go from 190 to 300 characters. Edit image alt text and add a spoiler after sending. Mod View works for members who left or were banned; duplicate roles. Copy links straight from the GIF picker.</description>
+  </item>
+  <item>
+    <title>Update: Patch notes</title>
+    <link>https://retroul.github.io/Pinged/#/updates/2026-09-08-patch-notes</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/updates/2026-09-08-patch-notes</guid>
+    <pubDate>Tue, 08 Sep 2026 12:00:00 GMT</pubDate>
+    <description>Free upload limit raised from 10 MB to 20 MB. Desktop moves to Electron 42 for lower CPU use. React Native upgrade makes mobile faster to launch.</description>
+  </item>
+  <item>
+    <title>Update: August changelog</title>
+    <link>https://retroul.github.io/Pinged/#/updates/2026-08-11-august-changelog</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/updates/2026-08-11-august-changelog</guid>
+    <pubDate>Tue, 11 Aug 2026 12:00:00 GMT</pubDate>
+    <description>Formatting toolbar for profile bios on desktop (no markdown needed). Private profiles: everyone, smaller servers only, or friends only. Add a note to friend requests. Spoiler channels: members confirm before viewing. @game mentions on desktop; Discord on Meta Quest; profile Frames. User Settings reorganised (&quot;Activity&quot; is now &quot;Games &amp; Apps&quot;).</description>
+  </item>
+  <item>
+    <title>Update: June changelog</title>
+    <link>https://retroul.github.io/Pinged/#/updates/2026-06-25-june-changelog</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/updates/2026-06-25-june-changelog</guid>
+    <pubDate>Thu, 25 Jun 2026 12:00:00 GMT</pubDate>
+    <description>Trending Games page. Tap to React: double-tap a message to react with a preset emoji. New mobile &quot;You&quot; bar.</description>
+  </item>
+  <item>
+    <title>Update: March changelog</title>
+    <link>https://retroul.github.io/Pinged/#/updates/2026-03-24-march-changelog</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/updates/2026-03-24-march-changelog</guid>
+    <pubDate>Tue, 24 Mar 2026 12:00:00 GMT</pubDate>
+    <description>Zoom and pan on screen-share streams with the scroll wheel or trackpad (desktop). &quot;Invite to Voice&quot; option. Game Stats profile widget supports a second game.</description>
+  </item>
+  <item>
+    <title>Experiment: Voice messages on desktop</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/voice-messages-on-desktop</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/voice-messages-on-desktop</guid>
+    <pubDate>Tue, 20 Oct 2026 12:00:00 GMT</pubDate>
+    <description>Recording voice messages, currently a mobile-only feature, is coming to the desktop app.</description>
+  </item>
+  <item>
+    <title>Experiment: Letterboxd connection</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/letterboxd-connection</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/letterboxd-connection</guid>
+    <description>Letterboxd is being added to the list of accounts you can connect to your profile.</description>
+  </item>
+  <item>
+    <title>Experiment: Nitro Emoji Packs</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/nitro-emoji-packs</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/nitro-emoji-packs</guid>
+    <pubDate>Tue, 01 Sep 2026 12:00:00 GMT</pubDate>
+    <description>A planned Nitro perk: ready-made emoji packs you can use everywhere without joining the server they come from. The pack shown in early previews is a placeholder.</description>
+  </item>
+  <item>
+    <title>Experiment: Best Buy promotion</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/best-buy-promotion</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/best-buy-promotion</guid>
+    <pubDate>Thu, 01 Oct 2026 12:00:00 GMT</pubDate>
+    <description>A Nitro perk in the works: eligible subscribers get one year of My Best Buy Plus free.</description>
+  </item>
+  <item>
+    <title>Experiment: Friends sidebar</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/friends-sidebar</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/friends-sidebar</guid>
+    <pubDate>Tue, 01 Sep 2026 12:00:00 GMT</pubDate>
+    <description>A sidebar that shows what your friends are playing without opening the Friends tab. Sort alphabetically, by activity, or by game; friends in voice with you get their own section. Create a Friend Invite link straight from the sidebar so people can add you in one click. Two versions are being tested, one of them pinned to the right side all the time. Which ships likely depends on how people use them.</description>
+  </item>
+  <item>
+    <title>Experiment: Riot Games promotion</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/riot-games-promotion</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/riot-games-promotion</guid>
+    <description>Nitro users will be able to claim a $10 credit for VALORANT or League of Legends items from the Nitro home tab.</description>
+  </item>
+  <item>
+    <title>Experiment: Checkpoint 2026</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/checkpoint-2026</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/checkpoint-2026</guid>
+    <description>Discord's end-of-year recap returns, this time with a randomly built custom character. Each character has 7 layers with items of different rarity, for over 600 million possible combinations.</description>
+  </item>
+  <item>
+    <title>Experiment: Voice activity colours</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/voice-activity-colours</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/voice-activity-colours</guid>
+    <description>A Nitro perk that changes the colour of the ring that lights up around your avatar while you talk.</description>
+  </item>
+  <item>
+    <title>Experiment: Game Mode</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/game-mode</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/game-mode</guid>
+    <pubDate>Mon, 28 Sep 2026 12:00:00 GMT</pubDate>
+    <description>Detects when a game is running and turns off animations and some effects to lower CPU and GPU use. Discord confirmed it as an early experiment on Sept 28. No performance numbers have been published yet.</description>
+  </item>
+  <item>
+    <title>Experiment: Global age assurance</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/global-age-assurance</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/global-age-assurance</guid>
+    <pubDate>Sat, 01 Aug 2026 12:00:00 GMT</pubDate>
+    <description>Every account is placed in an age group, estimated automatically where possible (account age, payment info and similar). You can see yours in Account Settings. You only need to verify if Discord can't estimate it. Accounts estimated as teens can't open age-restricted servers and channels, speak in Stage channels, unblur sensitive media, or turn off message requests. Not verifying doesn't lock your account; only those features stay restricted. New ways to verify are coming, including signals from iOS/Android and payment providers.</description>
+  </item>
+  <item>
+    <title>Experiment: Badge hiding</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/badge-hiding</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/badge-hiding</guid>
+    <pubDate>Sat, 01 Aug 2026 12:00:00 GMT</pubDate>
+    <description>Now rolling out on desktop and mobile: choose which badges show on your profile in profile settings. Nitro users can also reorder them. During testing there were two versions: hide any badge, or hide any badge except the Nitro level badge.</description>
+  </item>
+  <item>
+    <title>Experiment: Link component embeds</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/link-component-embeds</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/link-component-embeds</guid>
+    <description>Released: websites and apps can now show message components as their link preview, so shared links can display much richer information than a normal embed.</description>
+  </item>
+  <item>
+    <title>Experiment: AutoMod rules from apps</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/automod-rules-from-apps</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/automod-rules-from-apps</guid>
+    <pubDate>Tue, 01 Sep 2026 12:00:00 GMT</pubDate>
+    <description>Bots that admins approve will be able to plug into AutoMod, checking messages for rule-breaking content AutoMod can't catch on its own and acting on it automatically.</description>
+  </item>
+  <item>
+    <title>Experiment: YouTube Premium promotion</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/youtube-premium-promotion</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/youtube-premium-promotion</guid>
+    <pubDate>Tue, 01 Sep 2026 12:00:00 GMT</pubDate>
+    <description>Eligible Nitro subscribers will get 20% off a 6-month YouTube Premium membership.</description>
+  </item>
+  <item>
+    <title>Experiment: GTA VI campaign (&quot;Hexagon&quot;)</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/gta-vi-campaign-hexagon</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/gta-vi-campaign-hexagon</guid>
+    <pubDate>Sat, 01 Aug 2026 12:00:00 GMT</pubDate>
+    <description>A dataminer reported code for a GTA VI promotion with a themed app icon and a reported Nov 17 start. Not confirmed by Discord or Rockstar.</description>
+  </item>
+  <item>
+    <title>Experiment: Application channels</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/application-channels</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/application-channels</guid>
+    <pubDate>Wed, 01 Jul 2026 12:00:00 GMT</pubDate>
+    <description>A new channel type that opens an app or Activity right inside the channel, so it feels built into the server. One app per channel, and developers will be able to opt in later. Discord is also testing upgrades to the Activities SDK, such as native right-click menus and tooltips. None of this is final.</description>
+  </item>
+  <item>
+    <title>Experiment: 1 GB uploads for Nitro</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/1-gb-uploads-for-nitro</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/1-gb-uploads-for-nitro</guid>
+    <description>New text in the app suggests the Nitro upload limit will rise to 1 GB. Nothing else is visible yet.</description>
+  </item>
+  <item>
+    <title>Experiment: 25-person Group DMs with Nitro</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/25-person-group-dms-with-nitro</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/25-person-group-dms-with-nitro</guid>
+    <pubDate>Mon, 01 Jun 2026 12:00:00 GMT</pubDate>
+    <description>Nitro users will be able to add up to 25 people to a Group DM, even if they don't own it. The free limit stays at 10.</description>
+  </item>
+  <item>
+    <title>Experiment: Orb Challenges</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/orb-challenges</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/orb-challenges</guid>
+    <description>Earn Orbs by completing tasks (internally called &quot;achievements&quot;), separate from Quests. It sits in a new &quot;Orbs Wallet&quot; that will likely replace the menu that opens when you click your Orbs count in the Shop. What the tasks are isn't known yet.</description>
+  </item>
+  <item>
+    <title>Experiment: Search everyone with @@</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/search-everyone-with</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/search-everyone-with</guid>
+    <description>Type @@ in the Quick Switcher (Ctrl/⌘ + K) to search users across all your servers. A single @ only searches friends and the current server.</description>
+  </item>
+  <item>
+    <title>Experiment: Channel tabs</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/channel-tabs</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/channel-tabs</guid>
+    <pubDate>Wed, 01 Jul 2026 12:00:00 GMT</pubDate>
+    <description>Open channels and DMs as tabs across the top of the desktop app and switch between them quickly. Tabs show unread messages and can be pinned so they stay open.</description>
+  </item>
+  <item>
+    <title>Experiment: Custom typing indicators</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/custom-typing-indicators</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/custom-typing-indicators</guid>
+    <pubDate>Wed, 01 Jul 2026 12:00:00 GMT</pubDate>
+    <description>A Nitro perk that swaps the three typing dots for any 3 emoji you pick, plus one of several preset messages. Others see it in DMs and servers.</description>
+  </item>
+  <item>
+    <title>Experiment: Server Hub</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/server-hub</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/server-hub</guid>
+    <pubDate>Mon, 01 Jun 2026 12:00:00 GMT</pubDate>
+    <description>A customisable board inside your server made of panels that admins arrange freely. Extra panels cost boosts (1 each for now, which may change). Information: your own image and text. Leaderboard: the most active members. Whiteboard: members draw together, using the Whiteboard activity. Popular music: what members are listening to on Spotify. Activity: what members are playing right now.</description>
+  </item>
+  <item>
+    <title>Experiment: Profile embeds</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/profile-embeds</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/profile-embeds</guid>
+    <pubDate>Sat, 01 Aug 2026 12:00:00 GMT</pubDate>
+    <description>Links like discord.com/users/&lt;your ID&gt; will show a preview of the profile in chat, so sharing your profile is one click.</description>
+  </item>
+  <item>
+    <title>Experiment: Video &amp; screen share blocked in Brazil</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/video-screen-share-blocked-in-brazil</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/video-screen-share-blocked-in-brazil</guid>
+    <pubDate>Sat, 01 Aug 2026 12:00:00 GMT</pubDate>
+    <description>To follow a Brazilian court order, this experiment stops users in Brazil from starting or watching video and screen shares in voice channels. It's built so Discord could turn it on in other regions too.</description>
+  </item>
+  <item>
+    <title>Experiment: Living Room voice layout</title>
+    <link>https://retroul.github.io/Pinged/#/experiments/living-room-voice-layout</link>
+    <guid isPermaLink="false">https://retroul.github.io/Pinged/#/experiments/living-room-voice-layout</guid>
+    <pubDate>Mon, 22 Jun 2026 12:00:00 GMT</pubDate>
+    <description>An optional voice-call view that seats everyone's avatar in a room instead of a grid of tiles. Seats can be swapped. No spatial audio for now.</description>
+  </item>
+</channel>
+</rss>

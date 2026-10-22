@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c8cff"/><stop offset="1" stop-color="#ff6bcb"/></linearGradient>
+    <radialGradient id="glow1" cx="85%" cy="0%" r="70%"><stop offset="0" stop-color="#7c8cff" stop-opacity=".35"/><stop offset="1" stop-color="#7c8cff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="glow2" cx="0%" cy="100%" r="60%"><stop offset="0" stop-color="#ff6bcb" stop-opacity=".22"/><stop offset="1" stop-color="#ff6bcb" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1280" height="640" fill="#0f1017"/>
+  <rect width="1280" height="640" fill="url(#glow1)"/>
+  <rect width="1280" height="640" fill="url(#glow2)"/>
+
+  <!-- logo + name -->
+  <g transform="translate(80 92) scale(1.5)">
+    <path d="M14 8h36a10 10 0 0 1 10 10v20a10 10 0 0 1-10 10H30l-12 10v-10h-4A10 10 0 0 1 4 38V18A10 10 0 0 1 14 8z" fill="url(#g)"/>
+    <text x="32" y="38" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="26" fill="#fff">@</text>
+    <circle cx="54" cy="10" r="8" fill="#ff4757" stroke="#0f1017" stroke-width="3"/>
+  </g>
+  <text x="200" y="160" font-family="DejaVu Sans" font-weight="bold" font-size="68" fill="#e9eaf2" letter-spacing="-2">Pinged</text>
+
+  <text x="80" y="290" font-family="DejaVu Sans" font-weight="bold" font-size="46" fill="#e9eaf2" letter-spacing="-1.5">Write better messages.</text>
+  <text x="80" y="356" font-family="DejaVu Sans" font-weight="bold" font-size="46" fill="url(#g)" letter-spacing="-1.5">Know what's coming next.</text>
+  <text x="80" y="420" font-family="DejaVu Sans" font-size="26" fill="#a0a3b8">The unofficial Discord field guide</text>
+
+  <!-- tabs -->
+  <g font-family="DejaVu Sans" font-weight="bold" font-size="20">
+    <rect x="80" y="480" width="110" height="44" rx="22" fill="#7c8cff"/><text x="135" y="509" text-anchor="middle" fill="#fff">Guide</text>
+    <rect x="202" y="480" width="150" height="44" rx="22" fill="#1b1c29" stroke="#2a2c3d"/><text x="277" y="509" text-anchor="middle" fill="#e9eaf2">Markdown</text>
+    <rect x="364" y="480" width="104" height="44" rx="22" fill="#1b1c29" stroke="#2a2c3d"/><text x="416" y="509" text-anchor="middle" fill="#e9eaf2">Tools</text>
+    <rect x="480" y="480" width="132" height="44" rx="22" fill="#1b1c29" stroke="#2a2c3d"/><text x="546" y="509" text-anchor="middle" fill="#e9eaf2">Updates</text>
+    <rect x="624" y="480" width="170" height="44" rx="22" fill="#1b1c29" stroke="#2a2c3d"/><text x="709" y="509" text-anchor="middle" fill="#e9eaf2">Experiments</text>
+  </g>
+
+  <!-- chat mockup -->
+  <g transform="translate(880 150) rotate(2)">
+    <rect width="340" height="330" rx="20" fill="#313338"/>
+    <circle cx="44" cy="48" r="22" fill="#7c8cff"/><text x="44" y="56" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="20" fill="#fff">P</text>
+    <text x="80" y="42" font-family="DejaVu Sans" font-weight="bold" font-size="18" fill="#7c8cff">Pinged</text>
+    <text x="162" y="42" font-family="DejaVu Sans" font-size="13" fill="#949ba4">Today at 4:20 PM</text>
+    <text x="80" y="82" font-family="DejaVu Sans" font-weight="bold" font-size="26" fill="#f2f3f5">Game night</text>
+    <text x="80" y="108" font-family="DejaVu Sans" font-size="13" fill="#949ba4">hosted by</text>
+    <rect x="146" y="94" width="112" height="20" rx="4" fill="#5865f2" fill-opacity=".3"/><text x="152" y="109" font-family="DejaVu Sans" font-size="14" fill="#c9cdfb">@Moderators</text>
+    <text x="80" y="142" font-family="DejaVu Sans" font-size="16" fill="#dbdee1"><tspan font-weight="bold">Bold</tspan>, <tspan font-style="italic">italic</tspan>, <tspan text-decoration="underline">under</tspan></text>
+    <rect x="80" y="160" width="4" height="36" rx="2" fill="#4e5058"/>
+    <text x="96" y="184" font-family="DejaVu Sans" font-size="16" fill="#dbdee1">quotes &amp; </text>
+    <rect x="178" y="168" width="104" height="22" rx="4" fill="#1e1f22"/>
+    <rect x="80" y="214" width="240" height="88" rx="6" fill="#2b2d31" stroke="#1e1f22"/>
+    <text x="94" y="244" font-family="DejaVu Sans Mono" font-size="15"><tspan fill="#c678dd">const</tspan><tspan fill="#e06c75" dx="9">ping</tspan><tspan fill="#abb2bf" dx="9">=</tspan><tspan dx="9" fill="#98c379">"@you"</tspan></text>
+    <text x="94" y="270" font-family="DejaVu Sans Mono" font-size="15" font-weight="bold" fill="#dc322f">red <tspan fill="#859900">green</tspan> <tspan fill="#268bd2">blue</tspan></text>
+    <text x="94" y="292" font-family="DejaVu Sans Mono" font-size="12" fill="#949ba4">```ansi</text>
+  </g>
+</svg>

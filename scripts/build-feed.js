@@ -1,4 +1,5 @@
-// Builds feed.xml (RSS) from js/content.js.
+// Builds feed.xml (RSS) from js/content.js, and writes the site's address into index.html's
+// og:url, og:image and canonical link (link previews need absolute URLs).
 // Run after editing content:  node scripts/build-feed.js
 // Set SITE_URL if the site lives somewhere else:  SITE_URL=https://example.com/ node scripts/build-feed.js
 const fs = require("fs");
@@ -7,6 +8,7 @@ const path = require("path");
 const SITE = (process.env.SITE_URL || "https://retroul.github.io/Pinged/").replace(/\/?$/, "/");
 const ROOT = path.join(__dirname, "..");
 const OUT = path.join(ROOT, "feed.xml");
+const INDEX = path.join(ROOT, "index.html");
 
 function loadContent() {
   global.window = {};
@@ -47,8 +49,17 @@ function buildFeed() {
     body + "\n</channel>\n</rss>\n";
 }
 
+// Points index.html's absolute-URL tags at `site`.
+function stampIndex(html, site) {
+  return html
+    .replace(/(<meta property="og:url" content=")[^"]*(")/, "$1" + site + "$2")
+    .replace(/(<meta property="og:image" content=")[^"]*(")/, "$1" + site + "assets/social-preview.png$2")
+    .replace(/(<link rel="canonical" href=")[^"]*(")/, "$1" + site + "$2");
+}
+
 if (require.main === module) {
   fs.writeFileSync(OUT, buildFeed());
-  console.log("Wrote " + path.relative(ROOT, OUT));
+  fs.writeFileSync(INDEX, stampIndex(fs.readFileSync(INDEX, "utf8"), SITE));
+  console.log("Wrote " + path.relative(ROOT, OUT) + " and " + path.relative(ROOT, INDEX));
 }
-module.exports = { buildFeed, OUT };
+module.exports = { buildFeed, stampIndex, SITE, OUT, INDEX };

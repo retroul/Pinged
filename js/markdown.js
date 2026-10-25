@@ -142,7 +142,8 @@
 
       const h = line.match(/^(#{1,3}) (.+)$/);
       if (h) {
-        out += "<h" + h[1].length + ' class="md-h">' + inline(h[2]) + "</h" + h[1].length + ">";
+        // Divs, not <h1>-<h3>: a preview is a sample message and must not add headings to the page's outline.
+        out += '<div class="md-h md-h' + h[1].length + '">' + inline(h[2]) + "</div>";
         i++;
         continue;
       }
@@ -304,7 +305,72 @@
     return out.sort((a, b) => a.line - b.line);
   }
 
-  const api = { render, renderAnsi, formatTimestamp, tokensToAnsi, escapeHtml, lint, ANSI_TOKENS };
+  /* ---------- Splitting long messages ---------- */
+
+  // What is still open after `text`: a code block (with its language), inline code, and **, __, ~~ and || runs.
+  function openFormatting(text) {
+    let fence = null, code = false;
+    const marks = [];
+    let i = 0;
+    while (i < text.length) {
+      if ((i === 0 || text[i - 1] === "\n") && text.startsWith("```", i)) {
+        const nl = text.indexOf("\n", i);
+        const end = nl === -1 ? text.length : nl;
+        fence = fence === null ? text.slice(i + 3, end).trim() : null;
+        i = end;
+        continue;
+      }
+      const ch = text[i];
+      if (fence !== null) { i++; continue; }
+      if (ch === "\\") { i += 2; continue; }
+      if (ch === "`") { code = !code; i++; continue; }
+      const two = text.substr(i, 2);
+      if (!code && (two === "**" || two === "__" || two === "~~" || two === "||")) {
+        const at = marks.lastIndexOf(two);
+        if (at === -1) marks.push(two); else marks.splice(at, 1);
+        i += 2;
+        continue;
+      }
+      i++;
+    }
+    return { fence, code, marks };
+  }
+
+  // Cuts a long message into pieces of at most `limit` characters. Cuts fall on a blank line, then a line
+  // break, then a space, and formatting that is open at a cut (code blocks, bold, spoilers...) is closed at the
+  // end of the piece and opened again at the start of the next, so each piece formats on its own.
+  function split(text, limit) {
+    limit = Math.max(limit || 2000, 100);
+    const pieces = [];
+    let rest = String(text).replace(/\r\n/g, "\n");
+    let prefix = "";
+    while (rest.trim()) {
+      if (prefix.length + rest.length <= limit) { pieces.push((prefix + rest).trimEnd()); break; }
+      let end = limit - prefix.length;
+      let head, suffix, state;
+      for (;;) {
+        const window = rest.slice(0, end);
+        let cut = end;
+        for (const sep of ["\n\n", "\n", " "]) {
+          const at = window.lastIndexOf(sep);
+          if (at >= end * 0.3) { cut = at; break; }
+        }
+        if (cut === end && cut > 0 && /[\ud800-\udbff]/.test(rest[cut - 1])) cut--;
+        head = rest.slice(0, cut).trimEnd();
+        state = openFormatting(prefix + head);
+        suffix = (state.code ? "`" : "") + (state.fence !== null ? "\n```" : "") + state.marks.slice().reverse().join("");
+        const over = prefix.length + head.length + suffix.length - limit;
+        if (over <= 0 || end <= 1) { rest = rest.slice(head.length).replace(/^[ \t]*\n*/, ""); break; }
+        end -= over;
+      }
+      if (head.trim()) pieces.push(prefix + head + suffix);
+      prefix = (state.fence !== null && state.marks.length ? state.marks.join("") + "\n" : state.marks.join("")) +
+        (state.fence !== null ? "```" + state.fence + "\n" : "") + (state.code ? "`" : "");
+    }
+    return pieces;
+  }
+
+  const api = { render, renderAnsi, formatTimestamp, tokensToAnsi, escapeHtml, lint, split, ANSI_TOKENS };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.PingedMarkdown = api;
 })(typeof window !== "undefined" ? window : globalThis);

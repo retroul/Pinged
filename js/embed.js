@@ -8,35 +8,60 @@
   "use strict";
 
   // Discord's documented embed limits.
-  const LIMITS = { content: 2000, title: 256, description: 4096, fields: 25, fieldName: 256, fieldValue: 1024, footer: 2048, author: 256, username: 80, total: 6000 };
+  const LIMITS = { content: 2000, title: 256, description: 4096, embeds: 10, fields: 25, fieldName: 256, fieldValue: 1024, footer: 2048, author: 256, username: 80, total: 6000 };
   const WEBHOOK_RE = /^https:\/\/(?:(?:canary|ptb)\.)?discord(?:app)?\.com\/api(?:\/v\d+)?\/webhooks\/\d{5,25}\/[\w-]{20,100}$/;
 
   const isHttpUrl = (s) => /^https?:\/\/[^\s"<>]+$/.test(s || "");
 
-  function blankState() {
+  // A message is text from the bot plus up to ten embeds, each with its own author, body, images, fields and footer.
+  function blankEmbed() {
     return {
-      username: "", avatarUrl: "", content: "",
       authorName: "", authorUrl: "", authorIcon: "",
       title: "", url: "", description: "", color: "#5865f2",
       fields: [], image: "", thumbnail: "", footer: "", footerIcon: "", timestamp: false,
     };
   }
 
+  function blankState() {
+    return { username: "", avatarUrl: "", content: "", embeds: [blankEmbed()] };
+  }
+
   function exampleState() {
     return Object.assign(blankState(), {
       username: "Server Bot",
       content: "New event posted!",
-      authorName: "Events team",
-      title: "Game night this Friday",
-      description: "Bring friends. **Prizes** for the top three.\n\nReact below if you're coming.",
-      color: "#3ba55d",
-      fields: [
-        { name: "When", value: "Friday, 8 PM", inline: true },
-        { name: "Where", value: "#game-night", inline: true },
-        { name: "Games", value: "- Among Us\n- Jackbox", inline: false },
-      ],
-      footer: "Hosted by the mod team",
-      timestamp: true,
+      embeds: [Object.assign(blankEmbed(), {
+        authorName: "Events team",
+        title: "Game night this Friday",
+        description: "Bring friends. **Prizes** for the top three.\n\nReact below if you're coming.",
+        color: "#3ba55d",
+        fields: [
+          { name: "When", value: "Friday, 8 PM", inline: true },
+          { name: "Where", value: "#game-night", inline: true },
+          { name: "Games", value: "- Among Us\n- Jackbox", inline: false },
+        ],
+        footer: "Hosted by the mod team",
+        timestamp: true,
+      })],
+    });
+  }
+
+  // Copies the keys of `blank` from `src`, keeping only values of the right type.
+  const fill = (blank, src) => {
+    const out = blank;
+    Object.keys(blank).forEach((k) => { if (src && typeof src[k] === typeof blank[k] && !Array.isArray(blank[k])) out[k] = src[k]; });
+    return out;
+  };
+
+  // Reads a saved draft. Older drafts kept a single embed's fields at the top level, so those are wrapped.
+  function normalizeState(saved) {
+    if (!saved || typeof saved !== "object" || Array.isArray(saved)) return exampleState();
+    const list = (Array.isArray(saved.embeds) ? saved.embeds : [saved]).filter((e) => e && typeof e === "object").slice(0, LIMITS.embeds);
+    return Object.assign(fill(blankState(), saved), {
+      embeds: (list.length ? list : [{}]).map((e) => Object.assign(fill(blankEmbed(), e), {
+        fields: (Array.isArray(e.fields) ? e.fields : []).filter((f) => f && typeof f === "object")
+          .map((f) => ({ name: typeof f.name === "string" ? f.name : "", value: typeof f.value === "string" ? f.value : "", inline: !!f.inline })),
+      })),
     });
   }
 
@@ -46,26 +71,33 @@
     const tooLong = (label, value, max) => { if ((value || "").length > max) errors.push(label + " is " + value.length + " characters; the limit is " + max + "."); };
     tooLong("Message text", s.content, LIMITS.content);
     tooLong("Bot name", s.username, LIMITS.username);
-    tooLong("Title", s.title, LIMITS.title);
-    tooLong("Description", s.description, LIMITS.description);
-    tooLong("Author name", s.authorName, LIMITS.author);
-    tooLong("Footer", s.footer, LIMITS.footer);
-    if (s.fields.length > LIMITS.fields) errors.push("You have " + s.fields.length + " fields; the limit is 25.");
-    s.fields.forEach((f, i) => {
-      if (!f.name.trim() || !f.value.trim()) errors.push("Field " + (i + 1) + " needs both a name and a value.");
-      tooLong("Field " + (i + 1) + " name", f.name, LIMITS.fieldName);
-      tooLong("Field " + (i + 1) + " value", f.value, LIMITS.fieldValue);
+    if (s.avatarUrl && !isHttpUrl(s.avatarUrl)) errors.push("Bot avatar must be a full http(s) link.");
+    if (s.embeds.length > LIMITS.embeds) errors.push("You have " + s.embeds.length + " embeds; the limit is " + LIMITS.embeds + ".");
+    s.embeds.forEach((e, n) => {
+      const at = s.embeds.length > 1 ? "Embed " + (n + 1) + ": " : "";
+      const long = (label, value, max) => tooLong(at + label, value, max);
+      long("Title", e.title, LIMITS.title);
+      long("Description", e.description, LIMITS.description);
+      long("Author name", e.authorName, LIMITS.author);
+      long("Footer", e.footer, LIMITS.footer);
+      if (e.fields.length > LIMITS.fields) errors.push(at + "You have " + e.fields.length + " fields; the limit is 25.");
+      e.fields.forEach((f, i) => {
+        if (!f.name.trim() || !f.value.trim()) errors.push(at + "Field " + (i + 1) + " needs both a name and a value.");
+        long("Field " + (i + 1) + " name", f.name, LIMITS.fieldName);
+        long("Field " + (i + 1) + " value", f.value, LIMITS.fieldValue);
+      });
+      [["Title link", e.url], ["Author link", e.authorUrl], ["Author icon", e.authorIcon], ["Image", e.image], ["Thumbnail", e.thumbnail], ["Footer icon", e.footerIcon]]
+        .forEach(([label, v]) => { if (v && !isHttpUrl(v)) errors.push(at + label + " must be a full http(s) link."); });
     });
-    [["Title link", s.url], ["Author link", s.authorUrl], ["Author icon", s.authorIcon], ["Image", s.image], ["Thumbnail", s.thumbnail], ["Footer icon", s.footerIcon], ["Bot avatar", s.avatarUrl]]
-      .forEach(([label, v]) => { if (v && !isHttpUrl(v)) errors.push(label + " must be a full http(s) link."); });
-    const total = [s.title, s.description, s.authorName, s.footer].concat(s.fields.flatMap((f) => [f.name, f.value])).join("").length;
+    // Discord counts the text of every embed in the message together.
+    const total = s.embeds.reduce((sum, e) => sum + [e.title, e.description, e.authorName, e.footer].concat(e.fields.flatMap((f) => [f.name, f.value])).join("").length, 0);
     if (total > LIMITS.total) errors.push("All embed text adds up to " + total + " characters; the limit is 6000.");
-    if (!hasEmbed(s) && !s.content.trim()) errors.push("Add some message text or embed content.");
+    if (!s.embeds.some(hasEmbed) && !s.content.trim()) errors.push("Add some message text or embed content.");
     return errors;
   }
 
-  function hasEmbed(s) {
-    return !!(s.title || s.description || s.authorName || s.footer || s.image || s.thumbnail || s.fields.length);
+  function hasEmbed(e) {
+    return !!(e.title || e.description || e.authorName || e.footer || e.image || e.thumbnail || e.fields.length);
   }
 
   // The JSON body Discord's webhook endpoint expects. Empty parts are left out.
@@ -74,20 +106,21 @@
     if (s.username) p.username = s.username;
     if (s.avatarUrl) p.avatar_url = s.avatarUrl;
     if (s.content) p.content = s.content;
-    if (hasEmbed(s)) {
+    const embeds = s.embeds.filter(hasEmbed).map((x) => {
       const e = {};
-      if (s.authorName) e.author = Object.assign({ name: s.authorName }, s.authorUrl && { url: s.authorUrl }, s.authorIcon && { icon_url: s.authorIcon });
-      if (s.title) e.title = s.title;
-      if (s.url) e.url = s.url;
-      if (s.description) e.description = s.description;
-      e.color = parseInt(s.color.replace("#", ""), 16) || 0;
-      if (s.fields.length) e.fields = s.fields.map((f) => ({ name: f.name, value: f.value, inline: !!f.inline }));
-      if (s.image) e.image = { url: s.image };
-      if (s.thumbnail) e.thumbnail = { url: s.thumbnail };
-      if (s.footer) e.footer = Object.assign({ text: s.footer }, s.footerIcon && { icon_url: s.footerIcon });
-      if (s.timestamp) e.timestamp = (now || new Date()).toISOString();
-      p.embeds = [e];
-    }
+      if (x.authorName) e.author = Object.assign({ name: x.authorName }, x.authorUrl && { url: x.authorUrl }, x.authorIcon && { icon_url: x.authorIcon });
+      if (x.title) e.title = x.title;
+      if (x.url) e.url = x.url;
+      if (x.description) e.description = x.description;
+      e.color = parseInt(x.color.replace("#", ""), 16) || 0;
+      if (x.fields.length) e.fields = x.fields.map((f) => ({ name: f.name, value: f.value, inline: !!f.inline }));
+      if (x.image) e.image = { url: x.image };
+      if (x.thumbnail) e.thumbnail = { url: x.thumbnail };
+      if (x.footer) e.footer = Object.assign({ text: x.footer }, x.footerIcon && { icon_url: x.footerIcon });
+      if (x.timestamp) e.timestamp = (now || new Date()).toISOString();
+      return e;
+    });
+    if (embeds.length) p.embeds = embeds;
     return p;
   }
 
@@ -97,11 +130,10 @@
     try { p = typeof input === "string" ? JSON.parse(input) : input; } catch (e) { throw new Error("That isn't valid JSON."); }
     if (!p || typeof p !== "object" || Array.isArray(p)) throw new Error("Expected a JSON object.");
     const isBody = ["embeds", "content", "username", "avatar_url"].some((k) => k in p);
-    const e = (isBody ? (Array.isArray(p.embeds) && p.embeds[0]) : p) || {};
+    const list = (isBody ? (Array.isArray(p.embeds) ? p.embeds : []) : [p]).filter((e) => e && typeof e === "object").slice(0, LIMITS.embeds);
     const str = (v) => (typeof v === "string" ? v : "");
     const url = (o) => str(o && o.url);
-    return Object.assign(blankState(), {
-      username: str(p.username), avatarUrl: str(p.avatar_url), content: str(p.content),
+    const embed = (e) => Object.assign(blankEmbed(), {
       authorName: str(e.author && e.author.name), authorUrl: url(e.author), authorIcon: str(e.author && e.author.icon_url),
       title: str(e.title), url: str(e.url), description: str(e.description),
       color: typeof e.color === "number" ? "#" + (e.color & 0xffffff).toString(16).padStart(6, "0") : "#5865f2",
@@ -110,6 +142,32 @@
       image: url(e.image), thumbnail: url(e.thumbnail), footer: str(e.footer && e.footer.text), footerIcon: str(e.footer && e.footer.icon_url),
       timestamp: !!e.timestamp,
     });
+    return Object.assign(blankState(), {
+      username: isBody ? str(p.username) : "", avatarUrl: isBody ? str(p.avatar_url) : "", content: isBody ? str(p.content) : "",
+      embeds: list.length ? list.map(embed) : [blankEmbed()],
+    });
+  }
+
+  // Every picture link in the message. Showing a preview loads them, which tells those sites the page was opened.
+  function pictureUrls(s) {
+    const urls = [s.avatarUrl];
+    s.embeds.forEach((e) => urls.push(e.authorIcon, e.image, e.thumbnail, e.footerIcon));
+    return urls.filter(isHttpUrl);
+  }
+
+  // Share links carry the payload as base64url JSON, so a link reopens the builder exactly as it was.
+  function toShare(s) {
+    const bytes = new TextEncoder().encode(JSON.stringify(toPayload(s)));
+    return btoa(Array.from(bytes, (b) => String.fromCharCode(b)).join("")).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  function fromShare(text) {
+    let json;
+    try {
+      const raw = atob(String(text).replace(/-/g, "+").replace(/_/g, "/"));
+      json = new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(raw, (c) => c.charCodeAt(0)));
+    } catch (e) { throw new Error("That share link is damaged."); }
+    return fromPayload(json);
   }
 
   const CODE_LANGS = [["json", "JSON"], ["curl", "curl"], ["javascript", "JavaScript"], ["python", "Python"]];
@@ -125,27 +183,28 @@
   }
 
   // Discord-looking preview. `md` renders markdown to safe HTML; `esc` escapes plain text.
-  function preview(s, md, esc) {
-    const img = (url, cls) => (isHttpUrl(url) ? '<img class="' + cls + '" src="' + esc(url) + '" alt="" referrerpolicy="no-referrer">' : "");
+  // With opts.blockImages, no picture is requested.
+  function preview(s, md, esc, opts) {
+    const block = !!(opts && opts.blockImages);
+    const img = (url, cls) => (!block && isHttpUrl(url) ? '<img class="' + cls + '" src="' + esc(url) + '" alt="" referrerpolicy="no-referrer">' : "");
     const name = s.username || "Captain Hook";
-    let embed = "";
-    if (hasEmbed(s)) {
-      const author = s.authorName ? '<div class="em-author">' + img(s.authorIcon, "em-author-icon") +
-        (isHttpUrl(s.authorUrl) ? '<a href="' + esc(s.authorUrl) + '" target="_blank" rel="noopener noreferrer">' + esc(s.authorName) + "</a>" : esc(s.authorName)) + "</div>" : "";
-      const title = s.title ? '<div class="em-title">' + (isHttpUrl(s.url) ? '<a href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer">' + md(s.title) + "</a>" : md(s.title)) + "</div>" : "";
-      const desc = s.description ? '<div class="em-desc md">' + md(s.description) + "</div>" : "";
-      const fields = s.fields.length ? '<div class="em-fields">' + s.fields.map((f) =>
+    const embedHtml = (e) => {
+      const author = e.authorName ? '<div class="em-author">' + img(e.authorIcon, "em-author-icon") +
+        (isHttpUrl(e.authorUrl) ? '<a href="' + esc(e.authorUrl) + '" target="_blank" rel="noopener noreferrer">' + esc(e.authorName) + "</a>" : esc(e.authorName)) + "</div>" : "";
+      const title = e.title ? '<div class="em-title">' + (isHttpUrl(e.url) ? '<a href="' + esc(e.url) + '" target="_blank" rel="noopener noreferrer">' + md(e.title) + "</a>" : md(e.title)) + "</div>" : "";
+      const desc = e.description ? '<div class="em-desc md">' + md(e.description) + "</div>" : "";
+      const fields = e.fields.length ? '<div class="em-fields">' + e.fields.map((f) =>
         '<div class="em-field' + (f.inline ? " inline" : "") + '"><div class="em-field-name">' + md(f.name) + '</div><div class="em-field-value md">' + md(f.value) + "</div></div>").join("") + "</div>" : "";
-      const footerText = [s.footer && esc(s.footer), s.timestamp && "Today at 4:20 PM"].filter(Boolean).join(" • ");
-      const footer = footerText ? '<div class="em-footer">' + img(s.footerIcon, "em-footer-icon") + footerText + "</div>" : "";
-      embed = '<div class="em" style="border-left-color:' + esc(/^#[0-9a-f]{6}$/i.test(s.color) ? s.color : "#1e1f22") + '"><div class="em-grid"><div class="em-main">' +
-        author + title + desc + fields + "</div>" + img(s.thumbnail, "em-thumb") + "</div>" + img(s.image, "em-image") + footer + "</div>";
-    }
-    const avatar = isHttpUrl(s.avatarUrl) ? '<img class="dc-avatar" src="' + esc(s.avatarUrl) + '" alt="" referrerpolicy="no-referrer">'
+      const footerText = [e.footer && esc(e.footer), e.timestamp && "Today at 4:20 PM"].filter(Boolean).join(" • ");
+      const footer = footerText ? '<div class="em-footer">' + img(e.footerIcon, "em-footer-icon") + footerText + "</div>" : "";
+      return '<div class="em" style="border-left-color:' + esc(/^#[0-9a-f]{6}$/i.test(e.color) ? e.color : "#1e1f22") + '"><div class="em-grid"><div class="em-main">' +
+        author + title + desc + fields + "</div>" + img(e.thumbnail, "em-thumb") + "</div>" + img(e.image, "em-image") + footer + "</div>";
+    };
+    const avatar = !block && isHttpUrl(s.avatarUrl) ? '<img class="dc-avatar" src="' + esc(s.avatarUrl) + '" alt="" referrerpolicy="no-referrer">'
       : '<div class="dc-avatar" style="background:#5865f2" aria-hidden="true">' + esc(name[0].toUpperCase()) + "</div>";
     return '<div class="dc-msg">' + avatar + '<div class="dc-body"><div class="dc-head"><span class="dc-name">' + esc(name) +
       '</span><span class="dc-app">APP</span><span class="dc-stamp">Today at 4:20 PM</span></div>' +
-      (s.content ? '<div class="dc-content md">' + md(s.content) + "</div>" : "") + embed + "</div></div>";
+      (s.content ? '<div class="dc-content md">' + md(s.content) + "</div>" : "") + s.embeds.filter(hasEmbed).map(embedHtml).join("") + "</div></div>";
   }
 
   function isWebhookUrl(url) {
@@ -164,7 +223,7 @@
       });
   }
 
-  const api = { LIMITS, CODE_LANGS, blankState, exampleState, validate, toPayload, fromPayload, toCode, preview, isWebhookUrl, send };
+  const api = { LIMITS, CODE_LANGS, blankEmbed, blankState, exampleState, normalizeState, pictureUrls, validate, toPayload, fromPayload, toShare, fromShare, toCode, preview, isWebhookUrl, send };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.PingedEmbed = api;
 })(typeof window !== "undefined" ? window : globalThis);

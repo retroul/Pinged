@@ -85,12 +85,12 @@ test("embed JSON imports back into the builder", () => {
   const payload = EMBED.toPayload(state, now);
   assert.deepStrictEqual(EMBED.toPayload(EMBED.fromPayload(JSON.stringify(payload)), now), payload);
   // A bare embed works too.
-  assert.strictEqual(EMBED.fromPayload({ title: "Hi", color: 255 }).color, "#0000ff");
+  assert.strictEqual(EMBED.fromPayload({ title: "Hi", color: 255 }).embeds[0].color, "#0000ff");
   assert.strictEqual(EMBED.fromPayload('{"content":"hey"}').content, "hey");
   assert.throws(() => EMBED.fromPayload("{nope"), /valid JSON/);
   assert.throws(() => EMBED.fromPayload("[1]"), /object/);
   // Wrong types are ignored, not trusted.
-  const odd = EMBED.fromPayload({ embeds: [{ title: 5, fields: [null, { name: "a", value: 1 }] }] });
+  const odd = EMBED.fromPayload({ embeds: [{ title: 5, fields: [null, { name: "a", value: 1 }] }] }).embeds[0];
   assert.strictEqual(odd.title, "");
   assert.deepStrictEqual(odd.fields, [{ name: "a", value: "", inline: false }]);
 });
@@ -105,4 +105,56 @@ test("copy-as-code keeps the payload intact", () => {
   const py = EMBED.toCode(payload, "python");
   assert.ok(py.includes('json.loads(r"""{') && py.includes('requests.post('));
   EMBED.CODE_LANGS.forEach(([id]) => assert.ok(EMBED.toCode(payload, id).length > 0));
+});
+
+test("embed share links round-trip, including non-ASCII text", () => {
+  const now = new Date("2026-10-22T12:00:00Z");
+  const state = EMBED.exampleState();
+  Object.assign(state.embeds[0], { title: "Café ☕ 日本語 👋", footer: "a+b/c=d?" });
+  const code = EMBED.toShare(state);
+  assert.match(code, /^[\w-]+$/, "safe to put in a URL without escaping");
+  assert.deepStrictEqual(EMBED.toPayload(EMBED.fromShare(code), now), EMBED.toPayload(state, now));
+  assert.throws(() => EMBED.fromShare("%%%"), /damaged/);
+  assert.throws(() => EMBED.fromShare("bm9wZQ"), /valid JSON/);
+});
+
+const embedWith = (embed) => Object.assign(EMBED.blankEmbed(), embed);
+
+test("a message can carry several embeds, with Discord's limits across all of them", () => {
+  const state = Object.assign(EMBED.blankState(), { embeds: [embedWith({ title: "One" }), embedWith({ title: "Two", color: "#ff0000" }), EMBED.blankEmbed()] });
+  const payload = EMBED.toPayload(state);
+  assert.deepStrictEqual(payload.embeds.map((e) => e.title), ["One", "Two"], "empty embeds are left out");
+  assert.deepStrictEqual(EMBED.toPayload(EMBED.fromShare(EMBED.toShare(state))), payload);
+  assert.deepStrictEqual(EMBED.validate(state), []);
+
+  const eleven = Object.assign(EMBED.blankState(), { embeds: Array.from({ length: 11 }, (_, i) => embedWith({ title: "e" + i })) });
+  assert.ok(EMBED.validate(eleven).some((e) => /11 embeds/.test(e)));
+  assert.strictEqual(EMBED.fromPayload({ embeds: eleven.embeds }).embeds.length, 10, "import stops at ten");
+
+  // 4 x 2000 = 8000 characters: each embed is fine alone, the message as a whole is not.
+  const big = Object.assign(EMBED.blankState(), { embeds: Array.from({ length: 4 }, () => embedWith({ description: "x".repeat(2000) })) });
+  assert.ok(EMBED.validate(big).some((e) => /8000 characters/.test(e)));
+  const twoBad = Object.assign(EMBED.blankState(), { embeds: [embedWith({ title: "ok" }), embedWith({ image: "nope" })] });
+  assert.ok(EMBED.validate(twoBad).some((e) => /^Embed 2: Image/.test(e)), "errors say which embed");
+});
+
+test("drafts saved before multi-embed still load", () => {
+  const old = { username: "Bot", content: "hi", title: "Old title", color: "#ff0000", fields: [{ name: "a", value: "b", inline: true }], footer: "f", timestamp: true };
+  const s = EMBED.normalizeState(old);
+  assert.strictEqual(s.username, "Bot");
+  assert.strictEqual(s.embeds.length, 1);
+  assert.deepStrictEqual([s.embeds[0].title, s.embeds[0].color, s.embeds[0].fields.length, s.embeds[0].timestamp], ["Old title", "#ff0000", 1, true]);
+  assert.strictEqual(EMBED.normalizeState(null).embeds[0].title, "Game night this Friday");
+  assert.strictEqual(EMBED.normalizeState({ embeds: [] }).embeds.length, 1);
+  assert.strictEqual(EMBED.normalizeState({ username: 5, embeds: [{ title: 7 }] }).embeds[0].title, "", "wrong types are dropped");
+});
+
+test("pictures from a shared link can be held back until the visitor agrees", () => {
+  const state = Object.assign(EMBED.blankState(), { avatarUrl: "https://tracker.test/a.png", embeds: [embedWith({ title: "t", image: "https://tracker.test/i.png", thumbnail: "javascript:x" })] });
+  assert.deepStrictEqual(EMBED.pictureUrls(state), ["https://tracker.test/a.png", "https://tracker.test/i.png"]);
+  const render = (opts) => EMBED.preview(state, (t) => MD.render(t), MD.escapeHtml, opts);
+  assert.match(render(), /<img[^>]+tracker\.test\/i\.png/);
+  const held = render({ blockImages: true });
+  assert.doesNotMatch(held, /<img|tracker\.test/);
+  assert.match(held, /Title|>t</, "the text still shows");
 });

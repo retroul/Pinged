@@ -1,0 +1,15 @@
+{
+  "name": "Pinged: the unofficial Discord field guide",
+  "short_name": "Pinged",
+  "description": "Discord markdown with live previews, tips and shortcuts, updates and experiments.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1a1715",
+  "theme_color": "#1a1715",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

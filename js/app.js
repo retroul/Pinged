@@ -6,6 +6,7 @@
   const MD = window.PingedMarkdown;
   const LIVE = window.PingedLive;
   const EMBED = window.PingedEmbed;
+  const SNAP = window.PingedSnapshot;
   const $ = (sel, el) => (el || document).querySelector(sel);
   const esc = MD.escapeHtml;
   const slug = C.slug;
@@ -29,9 +30,9 @@
 
   // A Discord-style message. `html` is already-safe HTML.
   function message(html, who) {
-    who = who || { name: "You", color: "#e0a030", initial: "Y" };
+    who = who || { name: "You", color: "#a85a0a", initial: "Y" };
     return '<div class="dc-msg"><div class="dc-avatar" style="background:' + who.color + '" aria-hidden="true">' + who.initial + "</div>" +
-      '<div class="dc-body"><div class="dc-head"><span class="dc-name" style="color:' + who.color + '">' + esc(who.name) + '</span><span class="dc-stamp">Today at 4:20 PM</span></div>' +
+      '<div class="dc-body"><div class="dc-head"><span class="dc-name" style="color:color-mix(in srgb,' + who.color + ' 60%,var(--dc-head))">' + esc(who.name) + '</span><span class="dc-stamp">Today at 4:20 PM</span></div>' +
       '<div class="dc-content md">' + html + "</div></div></div>";
   }
 
@@ -158,32 +159,47 @@
         return '<section class="md-section" id="md-' + s.id + '"><h2>' + esc(s.title) + anchor("markdown", s.id) + '</h2><p class="muted">' + esc(s.blurb) + "</p>" + rows +
           (s.tip ? '<p class="tip"><b>Tip:</b> ' + esc(s.tip) + "</p>" : "") + "</section>";
       }).join("");
-      return '<div class="page-head head-open"><h1>Markdown</h1><p class="lede">Everything Discord can format, with a live preview. Hit <b>Try it</b> to edit any example.</p></div>' +
+      return '<div class="page-head head-open"><h1>Markdown</h1><p class="lede">Everything Discord can format, with a live preview. Hit <b>Try it</b> to edit any example. <a href="#/cheatsheet">Printable cheat sheet</a></p></div>' +
         '<div class="with-side"><nav class="side" aria-label="Markdown sections">' + nav + "</nav><div>" + sections + "</div></div>";
+    },
+
+    cheatsheet() {
+      const sections = C.markdown.map((s) =>
+        "<section><h2>" + esc(s.title) + "</h2>" + s.examples.map((ex) =>
+          '<div class="ex"><div class="ex-src"><span class="ex-label">' + esc(ex.label) + "</span><pre>" + esc(ex.src) + "</pre></div>" +
+          '<div class="ex-out dc">' + (ex.noRender ? '<p class="muted">Type this in Discord to see it.</p>' : '<div class="dc-content md">' + renderMd(ex.src) + "</div>") + "</div></div>").join("") + "</section>").join("");
+      return '<div class="page-head head-open"><h1>Markdown cheat sheet</h1><p class="lede">Every Discord format, compact enough to print. <button class="btn no-print" type="button" id="print-sheet">Print or save as PDF</button> <a class="no-print" href="#/markdown">Back to the full reference</a></p></div>' +
+        '<div class="cheat">' + sections + "</div>";
     },
 
     tools() {
       return '<div class="page-head head-open"><h1>Tools</h1><p class="lede">Write a message and see it exactly how Discord shows it. Then copy and paste.</p>' +
-        '<p class="links-row"><a href="#/tools/playground">Playground</a> · <a href="#/tools/embed">Embed builder</a> · <a href="#/tools/permissions">Permissions</a> · <a href="#/tools/ids">ID decoder</a> · <a href="#/tools/timestamps">Timestamps</a> · <a href="#/tools/colors">Coloured text</a></p></div>' +
+        '<p class="links-row"><a href="#/tools/playground">Playground</a> · <a href="#/tools/embed">Embed builder</a> · <a href="#/tools/splitter">Splitter</a> · <a href="#/tools/permissions">Permissions</a> · <a href="#/tools/ids">ID decoder</a> · <a href="#/tools/timestamps">Timestamps</a> · <a href="#/tools/colors">Coloured text</a></p></div>' +
         '<section class="tool" id="playground"><h2>Playground</h2><div class="pg">' +
         '<label class="sr-only" for="pg-input">Message text</label><textarea id="pg-input" spellcheck="false"></textarea>' +
         '<div class="dc pg-out" id="pg-out" aria-live="polite"></div></div>' +
         '<ul class="lint" id="pg-lint" aria-live="polite"></ul>' +
         '<div class="row"><label class="sr-only" for="pg-template">Template</label><select id="pg-template"><option value="">Start from a template…</option>' +
         C.templates.map((t, i) => '<option value="' + i + '">' + esc(t.name) + "</option>").join("") + "</select>" +
-        '<span class="muted" id="pg-count"></span><span class="grow"></span>' +
-        '<button class="btn btn-ghost" id="pg-clear">Clear</button><button class="btn btn-ghost" id="pg-link">Copy link</button><button class="btn" id="pg-copy">Copy message</button></div></section>' +
+        '<span class="muted" id="pg-count"></span><span class="muted" id="pg-saved" role="status"></span><span class="grow"></span>' +
+        '<button class="btn btn-ghost" id="pg-clear">Clear</button><button class="btn btn-ghost" id="pg-image">Save image</button><button class="btn btn-ghost" id="pg-link">Copy link</button><button class="btn" id="pg-copy">Copy message</button></div></section>' +
 
-        '<section class="tool" id="embed"><h2>Embed builder</h2><p class="muted">Build the rich boxes bots and webhooks post. Copy the JSON for your bot, or send it straight to a webhook in your own server.</p>' +
-        '<div class="pg"><form class="em-form" id="em-form" autocomplete="off"></form><div><div class="dc em-out" id="em-out" aria-live="polite"></div>' +
+        '<section class="tool" id="splitter"><h2>Message splitter</h2><p class="muted">Over Discord\'s length limit? This cuts a long message into pieces that each format on their own: a code block, bold text or a spoiler that runs across a cut is closed at the end of one piece and opened again at the start of the next.</p>' +
+        '<label class="sr-only" for="sp-input">Long message</label><textarea id="sp-input" rows="6" spellcheck="false" placeholder="Paste your long message here"></textarea>' +
+        '<div class="row"><label for="sp-limit">Limit per message</label><select id="sp-limit"><option value="2000">2000 (everyone)</option><option value="4000">4000 (Nitro)</option></select><span class="muted" id="sp-count" role="status"></span></div>' +
+        '<ol class="sp-list" id="sp-out"></ol></section>' +
+
+        '<section class="tool" id="embed"><h2>Embed builder</h2><p class="muted">Build the rich boxes bots and webhooks post, up to ten per message. Copy the JSON for your bot, or send it straight to a webhook in your own server.</p>' +
+        '<div class="pg"><form class="em-form" id="em-form" autocomplete="off"></form><div><p class="em-held" id="em-held" role="status" hidden>This link points to <span id="em-held-count"></span> on other sites. Showing them tells those sites you opened it. <button class="btn btn-ghost btn-sm" type="button" id="em-load-pics">Show pictures</button></p><div class="dc em-out" id="em-out" aria-live="polite"></div>' +
         '<ul class="em-errors" id="em-errors"></ul></div></div>' +
         '<details class="em-json"><summary>Code</summary><pre id="em-json"></pre></details>' +
         '<details class="em-json"><summary>Import JSON</summary><label class="sr-only" for="em-import">JSON to import</label><textarea id="em-import" rows="6" spellcheck="false" placeholder="Paste a webhook body or an embed object"></textarea>' +
         '<div class="row"><button class="btn btn-ghost" type="button" id="em-import-go">Load into builder</button><span class="muted" id="em-import-note" role="status"></span></div></details>' +
-        '<div class="row"><button class="btn btn-ghost" type="button" id="em-example">Load example</button><button class="btn btn-ghost" type="button" id="em-reset">Clear all</button><span class="grow"></span>' +
+        '<div class="row"><button class="btn btn-ghost" type="button" id="em-example">Load example</button><button class="btn btn-ghost" type="button" id="em-reset">Clear all</button>' +
+        '<button class="btn btn-ghost" type="button" id="em-image">Save image</button><button class="btn btn-ghost" type="button" id="em-link">Copy link</button><span class="muted" id="em-note" role="status"></span><span class="grow"></span>' +
         '<span class="inline-group"><label class="sr-only" for="em-lang">Format</label><select id="em-lang">' + EMBED.CODE_LANGS.map(([id, name]) => '<option value="' + id + '">' + name + "</option>").join("") + "</select>" +
         '<button class="btn" type="button" id="em-copy">Copy</button></span></div>' +
-        '<div class="row webhook-row"><label for="em-hook">Webhook link</label><input id="em-hook" type="password" placeholder="https://discord.com/api/webhooks/…" spellcheck="false">' +
+        '<div class="row webhook-row"><label for="em-hook">Webhook link</label><input id="em-hook" type="password" autocomplete="new-password" placeholder="https://discord.com/api/webhooks/…" spellcheck="false">' +
         '<button class="btn" type="button" id="em-send">Send</button><span class="muted" id="em-sent" role="status"></span></div>' +
         '<p class="muted small">Server Settings → Integrations → Webhooks → Copy Webhook URL. The link is only used to send this message and is never saved. Anyone with it can post as the webhook, so keep it private.</p></section>' +
 
@@ -287,7 +303,8 @@
     C.experiments.forEach((e) => idx.push({ title: e.name, where: "Experiments · " + statusLabel(e.status), href: "#/experiments/" + slug(e.name),
       text: [e.summary].concat(e.points || [], e.id || "", e.kind || "").join(" ") }));
     C.sources.forEach((g) => g.links.forEach(([label, , note]) => idx.push({ title: label, where: "Sources", href: "#/sources", text: note })));
-    [["Playground", "playground", "write a message and preview it check formatting problems template share link"], ["Embed builder", "embed", "webhook embed json import bot rich message code curl javascript python"],
+    [["Playground", "playground", "write a message and preview it check formatting problems template share link"], ["Embed builder", "embed", "webhook embed json import bot rich message code curl javascript python multiple embeds save image share link"],
+      ["Message splitter", "splitter", "long message split 2000 characters limit nitro 4000 too long cut pieces"],
       ["Permissions & invite link", "permissions", "permission number integer bitfield bot invite oauth client id administrator"], ["ID decoder", "ids", "snowflake id created date user server channel message"],
       ["Timestamp maker", "timestamps", "time date timezone countdown"], ["Coloured text builder", "colors", "ansi colour color text"]]
       .forEach(([t, id, words]) => idx.push({ title: t, where: "Tools", href: "#/tools/" + id, text: words }));
@@ -408,7 +425,7 @@
   const PG_KEY = "pinged.playground";
   const PG_DEFAULT = "# Hey there 👋\n**Bold**, *italic*, __underline__, ~~strike~~ and ||spoilers||\n- lists work\n- so do `inline code`\n> and quotes\n-# Edit me!";
 
-  function setupTools(pendingSrc) {
+  function setupTools(pendingSrc, pendingEmbed) {
     const input = $("#pg-input"), out = $("#pg-out"), count = $("#pg-count");
     const update = () => {
       out.innerHTML = message(renderMd(input.value || " "));
@@ -426,6 +443,7 @@
     input.addEventListener("input", update);
     $("#pg-clear").addEventListener("click", () => { input.value = ""; update(); input.focus(); });
     $("#pg-copy").addEventListener("click", (e) => copy(input.value, e.currentTarget));
+    $("#pg-image").addEventListener("click", (e) => saveImage(out, "pinged-message.png", e.currentTarget, $("#pg-saved")));
     $("#pg-link").addEventListener("click", (e) => copy(location.href.split("#")[0] + "#/tools/playground?m=" + encodeURIComponent(input.value), e.currentTarget));
     $("#pg-template").addEventListener("change", (e) => {
       const t = C.templates[e.target.value];
@@ -436,7 +454,8 @@
     });
     update();
 
-    setupEmbed();
+    setupSplitter();
+    setupEmbed(pendingEmbed);
     setupPermissions();
     setupIds();
 
@@ -460,8 +479,10 @@
     const ai = $("#ansi-input"), ao = $("#ansi-out");
     const swatchNames = Object.keys(MD.ANSI_TOKENS);
     $("#ansi-swatches").innerHTML = swatchNames.map((n) => {
-      const cls = n.startsWith("bg-") ? "ansi-bg-" + n.slice(3) : n === "bold" ? "ansi-bold" : n === "underline" ? "ansi-under" : n === "reset" ? "" : "ansi-fg-" + n;
-      return '<button class="swatch ' + cls + '" data-token="' + n + '">' + n + "</button>";
+      // The label stays readable text; the colour it applies is shown as a chip beside it.
+      const chip = n.startsWith("bg-") ? "ansi-bg-" + n.slice(3) : ["reset", "bold", "underline"].includes(n) ? "" : "ansi-fg-" + n;
+      const style = n === "bold" ? " ansi-bold" : n === "underline" ? " ansi-under" : "";
+      return '<button class="swatch' + style + '" data-token="' + n + '">' + (chip ? '<span class="swatch-dot ' + chip + '" aria-hidden="true"></span>' : "") + n + "</button>";
     }).join("");
     const drawAnsi = () => { ao.innerHTML = MD.renderAnsi(MD.tokensToAnsi(ai.value)); };
     ai.value = "{bold}{red}Warning:{reset} {yellow}server restart{reset} at {cyan}8 PM{reset}";
@@ -540,71 +561,117 @@
   /* ---------- Embed builder wiring ---------- */
 
   const EMBED_KEY = "pinged.embed";
+  const EMBED_MESSAGE = ["Message", [["username", "Bot name", "text"], ["avatarUrl", "Bot avatar link", "url"], ["content", "Message text (above the embeds)", "area"]]];
   const EMBED_FIELDS = [
-    ["Message", [["username", "Bot name", "text"], ["avatarUrl", "Bot avatar link", "url"], ["content", "Message text (above the embed)", "area"]]],
     ["Author", [["authorName", "Author name", "text"], ["authorUrl", "Author link", "url"], ["authorIcon", "Author icon link", "url"]]],
     ["Body", [["title", "Title", "text"], ["url", "Title link", "url"], ["description", "Description (markdown works)", "area"], ["color", "Colour", "color"]]],
     ["Images", [["thumbnail", "Thumbnail link (small, top right)", "url"], ["image", "Image link (large, bottom)", "url"]]],
     ["Footer", [["footer", "Footer text", "text"], ["footerIcon", "Footer icon link", "url"], ["timestamp", "Show current time", "check"]]],
   ];
 
-  function setupEmbed() {
-    const form = $("#em-form");
-    let state;
-    try { state = Object.assign(EMBED.blankState(), JSON.parse(readStore(EMBED_KEY)) || EMBED.exampleState()); } catch (e) { state = EMBED.exampleState(); }
+  function setupSplitter() {
+    const input = $("#sp-input"), limit = $("#sp-limit"), out = $("#sp-out"), count = $("#sp-count");
+    const update = () => {
+      const pieces = MD.split(input.value, Number(limit.value));
+      count.textContent = !input.value.trim() ? "" : pieces.length === 1 ? input.value.length + " characters: it fits in one message." : input.value.length + " characters, cut into " + pieces.length + " messages.";
+      out.innerHTML = pieces.length < 2 ? "" : pieces.map((p, i) =>
+        '<li><div class="sp-head"><span>Message ' + (i + 1) + " of " + pieces.length + ' · <span class="muted">' + p.length + " characters</span></span>" + copyButton(p) + "</div><pre>" + esc(p) + "</pre></li>").join("");
+    };
+    input.addEventListener("input", update);
+    limit.addEventListener("change", update);
+  }
 
-    const input = (key, label, type) => {
-      const id = "em-" + key, v = state[key];
-      if (type === "check") return '<label class="check"><input type="checkbox" id="' + id + '" data-key="' + key + '"' + (v ? " checked" : "") + "> " + label + "</label>";
-      const ctrl = type === "area" ? '<textarea id="' + id + '" data-key="' + key + '" rows="3">' + esc(v) + "</textarea>"
-        : '<input id="' + id + '" data-key="' + key + '" type="' + (type === "color" ? "color" : type === "url" ? "url" : "text") + '" value="' + esc(v) + '">';
+  function setupEmbed(shared) {
+    const form = $("#em-form");
+    let state, keep = true, held = false, sharedError = "";
+    try { state = EMBED.normalizeState(JSON.parse(readStore(EMBED_KEY))); } catch (e) { state = EMBED.exampleState(); }
+    // Opening someone's link must not overwrite your own saved draft until you start editing,
+    // and must not contact the sites its pictures live on until you say so.
+    if (shared) {
+      try {
+        state = EMBED.fromShare(shared);
+        keep = false;
+        held = EMBED.pictureUrls(state).length > 0;
+      } catch (e) { sharedError = e.message; }
+    }
+    const edited = () => { keep = true; };
+    const replaced = () => { keep = true; held = false; };
+
+    // `n` is the embed's position, or null for the message-level fields.
+    const input = (n, key, label, type) => {
+      const owner = n == null ? state : state.embeds[n];
+      const id = "em-" + (n == null ? "msg" : n) + "-" + key, v = owner[key];
+      const attrs = ' id="' + id + '" data-key="' + key + '"' + (n == null ? "" : ' data-embed="' + n + '"');
+      if (type === "check") return '<label class="check"><input type="checkbox"' + attrs + (v ? " checked" : "") + "> " + label + "</label>";
+      const ctrl = type === "area" ? "<textarea" + attrs + ' rows="3">' + esc(v) + "</textarea>"
+        : "<input" + attrs + ' type="' + (type === "color" ? "color" : type === "url" ? "url" : "text") + '" value="' + esc(v) + '">';
       return '<label for="' + id + '">' + label + "</label>" + ctrl;
     };
+    const group = (n, [name, inputs]) => "<fieldset><legend>" + name + "</legend>" + inputs.map((i) => input(n, ...i)).join("") + "</fieldset>";
+    const embedForm = (e, n) => {
+      const fields = e.fields.map((f, i) =>
+        '<div class="em-field-edit"><input aria-label="Embed ' + (n + 1) + " field " + (i + 1) + ' name" placeholder="Name" data-embed="' + n + '" data-field="' + i + '" data-prop="name" value="' + esc(f.name) + '">' +
+        '<textarea aria-label="Embed ' + (n + 1) + " field " + (i + 1) + ' value" placeholder="Value" rows="2" data-embed="' + n + '" data-field="' + i + '" data-prop="value">' + esc(f.value) + "</textarea>" +
+        '<label class="check"><input type="checkbox" data-embed="' + n + '" data-field="' + i + '" data-prop="inline"' + (f.inline ? " checked" : "") + '> Inline</label>' +
+        '<button type="button" class="btn btn-ghost" data-remove-field="' + i + '" data-embed="' + n + '">Remove field</button></div>').join("");
+      return '<section class="em-embed" aria-labelledby="em-h-' + n + '"><div class="em-embed-head"><h3 id="em-h-' + n + '">Embed ' + (n + 1) + "</h3>" +
+        (state.embeds.length > 1 ? '<button type="button" class="btn btn-ghost btn-sm" data-remove-embed="' + n + '" aria-label="Remove embed ' + (n + 1) + '">Remove embed</button>' : "") + "</div>" +
+        EMBED_FIELDS.map((g) => group(n, g)).join("") +
+        "<fieldset><legend>Fields (" + e.fields.length + "/" + EMBED.LIMITS.fields + ")</legend>" + fields +
+        '<button type="button" class="btn btn-ghost em-add-field" data-add-field data-embed="' + n + '"' + (e.fields.length >= EMBED.LIMITS.fields ? " disabled" : "") + ">Add field</button></fieldset></section>";
+    };
     const drawForm = () => {
-      form.innerHTML = EMBED_FIELDS.map(([group, inputs]) => "<fieldset><legend>" + group + "</legend>" + inputs.map((i) => input.apply(null, i)).join("") + "</fieldset>").join("") +
-        "<fieldset><legend>Fields (" + state.fields.length + "/25)</legend>" + state.fields.map((f, i) =>
-          '<div class="em-field-edit"><input aria-label="Field ' + (i + 1) + ' name" placeholder="Name" data-field="' + i + '" data-prop="name" value="' + esc(f.name) + '">' +
-          '<textarea aria-label="Field ' + (i + 1) + ' value" placeholder="Value" rows="2" data-field="' + i + '" data-prop="value">' + esc(f.value) + "</textarea>" +
-          '<label class="check"><input type="checkbox" data-field="' + i + '" data-prop="inline"' + (f.inline ? " checked" : "") + '> Inline</label>' +
-          '<button type="button" class="btn btn-ghost" data-remove="' + i + '">Remove</button></div>').join("") +
-        '<button type="button" class="btn btn-ghost" id="em-add"' + (state.fields.length >= 25 ? " disabled" : "") + ">Add field</button></fieldset>";
+      form.innerHTML = group(null, EMBED_MESSAGE) + state.embeds.map(embedForm).join("") +
+        '<button type="button" class="btn btn-ghost" id="em-add-embed"' + (state.embeds.length >= EMBED.LIMITS.embeds ? " disabled" : "") + ">Add embed (" + state.embeds.length + "/" + EMBED.LIMITS.embeds + ")</button>";
     };
     const code = () => EMBED.toCode(EMBED.toPayload(state), $("#em-lang").value);
     const drawPreview = () => {
-      $("#em-out").innerHTML = EMBED.preview(state, renderMd, esc);
+      $("#em-out").innerHTML = EMBED.preview(state, renderMd, esc, { blockImages: held });
       highlight($("#em-out"));
+      const pics = EMBED.pictureUrls(state).length;
+      $("#em-held").hidden = !held;
+      $("#em-held-count").textContent = pics + (pics === 1 ? " picture" : " pictures");
       const errors = EMBED.validate(state);
       $("#em-errors").innerHTML = errors.map((e) => "<li>" + esc(e) + "</li>").join("");
       $("#em-json").textContent = code();
       $("#em-send").disabled = $("#em-copy").disabled = errors.length > 0;
-      writeStore(EMBED_KEY, JSON.stringify(state));
+      if (keep) writeStore(EMBED_KEY, JSON.stringify(state));
     };
+    const redraw = () => { drawForm(); drawPreview(); };
+    const owner = (el) => (el.dataset.embed == null ? state : state.embeds[Number(el.dataset.embed)]);
 
     form.addEventListener("input", (e) => {
+      edited();
       const t = e.target;
-      if (t.dataset.key) state[t.dataset.key] = t.type === "checkbox" ? t.checked : t.value;
-      if (t.dataset.field != null) state.fields[Number(t.dataset.field)][t.dataset.prop] = t.type === "checkbox" ? t.checked : t.value;
+      if (t.dataset.key) owner(t)[t.dataset.key] = t.type === "checkbox" ? t.checked : t.value;
+      if (t.dataset.field != null) owner(t).fields[Number(t.dataset.field)][t.dataset.prop] = t.type === "checkbox" ? t.checked : t.value;
       drawPreview();
     });
     form.addEventListener("click", (e) => {
-      const rm = e.target.closest("[data-remove]");
-      if (rm) state.fields.splice(Number(rm.dataset.remove), 1);
-      else if (e.target.id === "em-add") state.fields.push({ name: "", value: "", inline: false });
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      if (btn.dataset.removeField != null) owner(btn).fields.splice(Number(btn.dataset.removeField), 1);
+      else if (btn.dataset.addField != null) owner(btn).fields.push({ name: "", value: "", inline: false });
+      else if (btn.dataset.removeEmbed != null) state.embeds.splice(Number(btn.dataset.removeEmbed), 1);
+      else if (btn.id === "em-add-embed") state.embeds.push(EMBED.blankEmbed());
       else return;
-      drawForm();
-      drawPreview();
+      edited();
+      redraw();
     });
     form.addEventListener("submit", (e) => e.preventDefault());
-    $("#em-example").addEventListener("click", () => { state = EMBED.exampleState(); drawForm(); drawPreview(); });
-    $("#em-reset").addEventListener("click", () => { state = EMBED.blankState(); drawForm(); drawPreview(); });
+    $("#em-example").addEventListener("click", () => { replaced(); state = EMBED.exampleState(); redraw(); });
+    $("#em-reset").addEventListener("click", () => { replaced(); state = EMBED.blankState(); redraw(); });
+    $("#em-load-pics").addEventListener("click", () => { held = false; drawPreview(); });
     $("#em-copy").addEventListener("click", (e) => copy(code(), e.currentTarget));
+    $("#em-link").addEventListener("click", (e) => copy(location.href.split("#")[0] + "#/tools/embed?e=" + EMBED.toShare(state), e.currentTarget));
+    $("#em-image").addEventListener("click", (e) => saveImage($("#em-out"), "pinged-embed.png", e.currentTarget, $("#em-note")));
     $("#em-lang").addEventListener("change", drawPreview);
     $("#em-import-go").addEventListener("click", () => {
       const note = $("#em-import-note");
       try {
         state = EMBED.fromPayload($("#em-import").value);
-        drawForm();
-        drawPreview();
+        replaced();
+        redraw();
         note.textContent = "Loaded.";
       } catch (err) { note.textContent = err.message; }
     });
@@ -616,8 +683,21 @@
         .then((msg) => { note.textContent = msg; }, (err) => { note.textContent = err.message; })
         .finally(() => { btn.disabled = EMBED.validate(state).length > 0; });
     });
-    drawForm();
-    drawPreview();
+    redraw();
+    if (sharedError) $("#em-note").textContent = sharedError;
+  }
+
+  // Saves a preview as a PNG. `note` is a role="status" element that reports what couldn't be included.
+  function saveImage(el, filename, btn, note) {
+    const label = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Saving…";
+    note.textContent = "";
+    SNAP.toPng(el).then(({ blob, skipped }) => {
+      SNAP.download(blob, filename);
+      if (skipped) note.textContent = skipped + (skipped === 1 ? " picture" : " pictures") + " from other sites couldn't be included.";
+    }, (err) => { note.textContent = err.message || "Couldn't save the image."; })
+      .finally(() => { btn.disabled = false; btn.textContent = label; });
   }
 
   function copy(text, btn) {
@@ -629,7 +709,7 @@
   /* ---------- Router ---------- */
 
   let pendingPlayground = null;
-  const TITLES = { guide: "", markdown: "Markdown", tools: "Tools", updates: "Updates", experiments: "Experiments", status: "Status", sources: "Sources", search: "Search" };
+  const TITLES = { guide: "", markdown: "Markdown", cheatsheet: "Markdown cheat sheet", tools: "Tools", updates: "Updates", experiments: "Experiments", status: "Status", sources: "Sources", search: "Search" };
 
   function safeDecode(s) {
     try { return decodeURIComponent(s); } catch (e) { return s; }
@@ -641,21 +721,23 @@
     const page = cut === -1 ? path : path.slice(0, cut);
     const rawSub = cut === -1 ? "" : path.slice(cut + 1);
     const name = pages[page] ? page : "guide";
-    // Outside search, "?m=..." after the section carries a shared playground message.
+    // Outside search, "?m=..." after the section carries a shared playground message and "?e=..." a shared embed.
     const qMark = name === "search" ? -1 : rawSub.indexOf("?");
     const sub = qMark === -1 ? rawSub : rawSub.slice(0, qMark);
-    const shared = qMark === -1 ? null : new URLSearchParams(rawSub.slice(qMark + 1)).get("m");
+    const query = new URLSearchParams(qMark === -1 ? "" : rawSub.slice(qMark + 1));
+    const shared = query.get("m"), sharedEmbed = query.get("e");
     if (name === "tools" && shared != null) pendingPlayground = shared;
     const main = $("#main");
 
     clearInterval(statusTimer);
-    main.innerHTML = name === "search" ? pages.search(safeDecode(sub)) : pages[name]();    highlight(main);
+    main.innerHTML = name === "search" ? pages.search(safeDecode(sub)) : pages[name]();
+    highlight(main);
     document.querySelectorAll(".tabs a").forEach((a) => a.setAttribute("aria-current", a.dataset.page === name ? "page" : "false"));
     document.title = (TITLES[name] ? TITLES[name] + " · " : "") + "Pinged: the unofficial Discord field guide";
     if (name !== "search") $("#search").value = "";
     drawTabBadges();
 
-    if (name === "tools") { setupTools(pendingPlayground); pendingPlayground = null; }
+    if (name === "tools") { setupTools(pendingPlayground, sharedEmbed); pendingPlayground = null; }
     if (name === "guide") drawHomeStatus();
     if (name === "experiments") drawFeed();
     if (name === "status") { drawStatusPage(); statusTimer = setInterval(drawStatusPage, 60 * 1000); }
@@ -723,6 +805,23 @@
     const fig = e.target.tagName === "IMG" && e.target.closest(".thumb");
     if (fig) fig.remove();
   }, true);
+
+  // Print on paper-white: the dark theme's light-on-dark colours would vanish on a white page.
+  let themeBeforePrint = null;
+  window.addEventListener("beforeprint", () => {
+    themeBeforePrint = document.documentElement.dataset.theme;
+    document.documentElement.dataset.theme = "light";
+    window.setCodeTheme("light");
+  });
+  window.addEventListener("afterprint", () => {
+    if (!themeBeforePrint) return;
+    document.documentElement.dataset.theme = themeBeforePrint;
+    window.setCodeTheme(themeBeforePrint);
+  });
+  document.addEventListener("click", (e) => { if (e.target.closest("#print-sheet")) window.print(); });
+
+  // Offline support: the page shell and fonts are cached by sw.js. Live status and feeds always use the network.
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => { /* no offline mode: fine */ });
 
   window.addEventListener("hashchange", route);
   route();

@@ -5,7 +5,7 @@ const fs = require("fs");
 const LIVE = require("../js/live.js");
 const EMBED = require("../js/embed.js");
 const MD = require("../js/markdown.js");
-const { buildFeed, OUT } = require("../scripts/build-feed.js");
+const { buildFeed, stampIndex, SITE, OUT, INDEX } = require("../scripts/build-feed.js");
 
 test("experiment comments are parsed", () => {
   const body = "## Strings\n```diff\n+ a: \"b\"\n```\n## New Apex Experiments\n```diff\n+ 2026-10-user-profile-widget-suggestions (user)\n * Variant 1\n * Variant 2\n+ 2026-10-other (guild)\n```\n" +
@@ -30,6 +30,9 @@ test("status components are grouped in page order", () => {
   assert.deepStrictEqual(groups.map((g) => [g.name, g.items.map((i) => i.name)]), [["Voice", ["Rotterdam"]], ["API", []]]);
 });
 
+// A message with one embed built from `embed`, plus any message-level `message` fields.
+const withEmbed = (embed, message) => Object.assign(EMBED.blankState(), message, { embeds: [Object.assign(EMBED.blankEmbed(), embed)] });
+
 test("embed payload and limits", () => {
   const s = EMBED.exampleState();
   assert.deepStrictEqual(EMBED.validate(s), []);
@@ -38,14 +41,14 @@ test("embed payload and limits", () => {
   assert.strictEqual(p.embeds[0].fields.length, 3);
   assert.strictEqual(p.embeds[0].timestamp, "2026-10-21T00:00:00.000Z");
   assert.ok(!("image" in p.embeds[0]));
-  assert.ok(EMBED.validate(Object.assign(EMBED.blankState(), { title: "x".repeat(257) })).some((e) => /Title/.test(e)));
-  assert.ok(EMBED.validate(Object.assign(EMBED.blankState(), { content: "hi", image: "javascript:alert(1)" })).some((e) => /Image/.test(e)));
+  assert.ok(EMBED.validate(withEmbed({ title: "x".repeat(257) })).some((e) => /Title/.test(e)));
+  assert.ok(EMBED.validate(withEmbed({ image: "javascript:alert(1)" }, { content: "hi" })).some((e) => /Image/.test(e)));
   assert.ok(EMBED.validate(EMBED.blankState()).length > 0); // empty message
 });
 
 test("embed preview escapes everything", () => {
   const evil = '"><img src=x onerror=alert(1)>';
-  const s = Object.assign(EMBED.blankState(), { username: evil, authorName: evil, footer: evil, color: evil, thumbnail: 'https://a.com/"onerror="x', fields: [{ name: evil, value: evil, inline: true }] });
+  const s = withEmbed({ authorName: evil, footer: evil, color: evil, thumbnail: 'https://a.com/"onerror="x', fields: [{ name: evil, value: evil, inline: true }] }, { username: evil });
   const html = EMBED.preview(s, (t) => MD.render(t), MD.escapeHtml);
   assert.doesNotMatch(html, /<img src=x|" onerror=|"onerror="/);
 });
@@ -58,6 +61,13 @@ test("only Discord webhook links are accepted", () => {
 
 test("feed.xml is up to date with content (run: node scripts/build-feed.js)", () => {
   assert.strictEqual(fs.readFileSync(OUT, "utf8"), buildFeed());
+});
+
+test("index.html link-preview tags are absolute and match the site address (run: node scripts/build-feed.js)", () => {
+  const html = fs.readFileSync(INDEX, "utf8");
+  assert.strictEqual(html, stampIndex(html, SITE));
+  assert.match(html, /<meta property="og:image" content="https:\/\/[^"]+\/assets\/social-preview\.png">/);
+  assert.match(html, /<meta property="og:url" content="https:\/\/[^"]+\/">/);
 });
 
 test("every entry has a unique link id", () => {

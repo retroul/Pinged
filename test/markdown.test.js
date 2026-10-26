@@ -16,6 +16,10 @@ test("html is escaped everywhere", () => {
 test("link attribute cannot be broken out of", () => {
   assert.doesNotMatch(r('[x](https://a.com/"onmouseover="alert(1))'), /" onmouseover|"onmouseover="/);
 });
+test("a NUL in the message cannot pull internal pieces into the output", () => {
+  const out = r("`x` <https://a.com/\u00000\u0000> \u00009\u0000");
+  assert.doesNotMatch(out, /href="[^"]*<|undefined|\u0000/);
+});
 test("code is not formatted", () => {
   assert.match(r("`**no**`"), /<code class="md-inline">\*\*no\*\*<\/code>/);
   assert.match(r("```js\nconst a = **b**;\n```"), /language-js">const a = \*\*b\*\*;<\/code>/);

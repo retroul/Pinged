@@ -201,7 +201,7 @@
         author + title + desc + fields + "</div>" + img(e.thumbnail, "em-thumb") + "</div>" + img(e.image, "em-image") + footer + "</div>";
     };
     const avatar = !block && isHttpUrl(s.avatarUrl) ? '<img class="dc-avatar" src="' + esc(s.avatarUrl) + '" alt="" referrerpolicy="no-referrer">'
-      : '<div class="dc-avatar" style="background:#5865f2" aria-hidden="true">' + esc(name[0].toUpperCase()) + "</div>";
+      : '<div class="dc-avatar" style="background:#5865f2" aria-hidden="true">' + esc(Array.from(name)[0].toUpperCase()) + "</div>";
     return '<div class="dc-msg">' + avatar + '<div class="dc-body"><div class="dc-head"><span class="dc-name">' + esc(name) +
       '</span><span class="dc-app">APP</span><span class="dc-stamp">Today at 4:20 PM</span></div>' +
       (s.content ? '<div class="dc-content md">' + md(s.content) + "</div>" : "") + s.embeds.filter(hasEmbed).map(embedHtml).join("") + "</div></div>";

@@ -21,7 +21,8 @@
     return d.toLocaleDateString(undefined, parts[2] ? { year: "numeric", month: "short", day: "numeric" } : { year: "numeric", month: "short" });
   };
   const fmtDateTime = (iso) => new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-  const ext = (url, label) => '<a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + label + "</a>";
+  // Links to other sites. Some URLs come from live data (status page, GitHub), so anything but http(s) stays plain text.
+  const ext = (url, label) => /^https?:\/\//i.test(url || "") ? '<a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + label + "</a>" : label;
 
   function readStore(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
   function writeStore(key, val) { try { localStorage.setItem(key, val); } catch (e) { /* storage blocked: fine */ } }
@@ -427,6 +428,8 @@
 
   function setupTools(pendingSrc, pendingEmbed) {
     const input = $("#pg-input"), out = $("#pg-out"), count = $("#pg-count");
+    // A shared link or "Try it" fills the playground without replacing your saved draft until you edit it.
+    let keep = pendingSrc == null;
     const update = () => {
       out.innerHTML = message(renderMd(input.value || " "));
       highlight(out);
@@ -437,11 +440,11 @@
       $("#pg-lint").innerHTML = problems.length
         ? problems.map((p) => "<li><b>Line " + p.line + ":</b> " + esc(p.text) + "</li>").join("")
         : (input.value.trim() ? '<li class="ok">No formatting problems found.</li>' : "");
-      writeStore(PG_KEY, input.value);
+      if (keep) writeStore(PG_KEY, input.value);
     };
     input.value = pendingSrc != null ? pendingSrc : (readStore(PG_KEY) ?? PG_DEFAULT);
-    input.addEventListener("input", update);
-    $("#pg-clear").addEventListener("click", () => { input.value = ""; update(); input.focus(); });
+    input.addEventListener("input", () => { keep = true; update(); });
+    $("#pg-clear").addEventListener("click", () => { keep = true; input.value = ""; update(); input.focus(); });
     $("#pg-copy").addEventListener("click", (e) => copy(input.value, e.currentTarget));
     $("#pg-image").addEventListener("click", (e) => saveImage(out, "pinged-message.png", e.currentTarget, $("#pg-saved")));
     $("#pg-link").addEventListener("click", (e) => copy(location.href.split("#")[0] + "#/tools/playground?m=" + encodeURIComponent(input.value), e.currentTarget));
@@ -450,6 +453,7 @@
       e.target.value = "";
       if (!t || (input.value.trim() && !confirm("Replace what's in the playground with this template?"))) return;
       input.value = t.src;
+      keep = true;
       update();
     });
     update();

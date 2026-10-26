@@ -87,7 +87,8 @@
     const held = [];
     const hold = (html) => HOLD + (held.push(html) - 1) + HOLD;
 
-    let text = String(source).replace(/\r\n?/g, "\n");
+    // NUL is the placeholder marker, so it must never come from the message itself.
+    let text = String(source).replace(/\r\n?/g, "\n").replace(/\u0000/g, "�");
 
     // 1. Code blocks and inline code are taken out first so nothing inside them is formatted.
     text = text.replace(/```(?:([\w+#.-]+)\n)?([\s\S]*?)```/g, (_, lang, code) => {

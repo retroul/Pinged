@@ -254,6 +254,7 @@ input[type="datetime-local"] { width: auto; font-family: inherit; }
 h2:hover .anchor, .anchor:focus { opacity: 1; }
 @media (hover: none) { .anchor { opacity: .6; } }
 .flash { animation: flash 1.6s ease-out; }
+@media (prefers-reduced-motion: reduce) { .flash { animation: none; } }
 @keyframes flash { from { background: color-mix(in srgb, var(--accent) 14%, transparent); } to { background: transparent; } }
 .results { list-style: none; padding: 0; }
 .results li { padding: 12px 0; border-bottom: 1px solid var(--line); }

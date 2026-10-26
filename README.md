@@ -72,6 +72,7 @@ sw.js                 offline cache
 manifest.webmanifest  install details for browsers
 css/style.css         styles (site + Discord-style chat previews)
 css/fonts.css         self-hosted Bricolage Grotesque (assets/fonts/)
+js/theme.js           sets light/dark before the page draws (no inline scripts: the page's security policy blocks them)
 js/markdown.js        Discord markdown → safe HTML renderer, plus the message checker
 js/content.js         all site content, including playground templates
 js/live.js            live Discord status and experiment feed

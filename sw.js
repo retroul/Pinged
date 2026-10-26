@@ -6,10 +6,10 @@
  * Live status, the experiment feed and pictures from other sites always go to the network.
  * Bump VERSION when the SHELL list changes, so the old cache is dropped.
  */
-const VERSION = "pinged-v2";
+const VERSION = "pinged-v3";
 const SHELL = [
   "./", "index.html", "manifest.webmanifest", "css/fonts.css", "css/style.css", "assets/fonts/bricolage-grotesque.woff2",
-  "js/markdown.js", "js/content.js", "js/live.js", "js/embed.js", "js/snapshot.js", "js/discord.js", "js/app.js",
+  "js/theme.js", "js/markdown.js", "js/content.js", "js/live.js", "js/embed.js", "js/snapshot.js", "js/discord.js", "js/app.js",
   "assets/logo.svg",
 ];
 const CDN_HOSTS = ["cdnjs.cloudflare.com"];

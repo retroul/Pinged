@@ -30,3 +30,13 @@ test("freshness check counts whole days since the content was last checked", () 
   assert.strictEqual(daysSince("2026-10-21", now), 4);
   assert.ok(daysSince("2026-09-01", now) > MAX_DAYS);
 });
+
+test("files from other sites carry an integrity hash, and the page has a script policy", () => {
+  const html = read("index.html");
+  for (const tag of html.match(/<(?:script|link)\b[^>]*(?:src|href)="https:\/\/[^"]*\.(?:js|css)"[^>]*>/g) || []) {
+    assert.match(tag, /integrity="sha(256|384|512)-/, "missing integrity: " + tag);
+    assert.match(tag, /crossorigin="anonymous"/, "missing crossorigin: " + tag);
+  }
+  assert.match(html, /http-equiv="Content-Security-Policy" content="[^"]*script-src 'self' https:\/\/cdnjs.cloudflare.com;/);
+  assert.doesNotMatch(html, /<script>/, "inline scripts are blocked by the policy; put them in a file");
+});

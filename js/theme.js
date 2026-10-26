@@ -10,6 +10,9 @@
     var dark = document.getElementById("hl-dark"), light = document.getElementById("hl-light");
     if (dark) dark.disabled = theme === "light";
     if (light) light.disabled = theme !== "light";
+    // The browser's own bar matches the page background.
+    var bar = document.querySelector('meta[name="theme-color"]');
+    if (bar) bar.content = theme === "light" ? "#f6f3ee" : "#1a1715";
   };
   window.setCodeTheme(t);
 })();

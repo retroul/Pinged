@@ -12,7 +12,7 @@
 | --- | --- |
 | **Guide** | Quick wins, keyboard shortcuts, quick-switcher prefixes, search filters, chat tricks |
 | **Markdown** | Every format (text, headers, subtext, lists, quotes, code, ANSI colour, spoilers, links, mentions, timestamps) with a live preview. **Try it** opens any example in the playground |
-| **Tools** | Live playground (explains why a message won't format, starts from templates, copies a link to your message), embed builder (up to ten embeds per message, preview, Discord's limits, import JSON, copy as JSON, curl, JavaScript or Python, or send to your webhook), message splitter (cuts a long message to fit 2000 or 4000 characters without breaking code blocks, bold or spoilers), permissions calculator with a bot invite link, ID decoder, timestamp maker, coloured-text (ANSI) builder |
+| **Tools** | Live playground (explains why a message won't format, starts from templates, copies a link to your message), embed builder (up to ten embeds per message, a poll, live character counts against Discord's limits, preview, import JSON, copy as JSON, curl, JavaScript or Python, send to your webhook or update a message it already sent, and named drafts saved in your browser), message splitter (cuts a long message to fit 2000 or 4000 characters without breaking code blocks, bold or spoilers), permissions calculator with a bot invite link, ID decoder, timestamp maker, coloured-text (ANSI) builder |
 | **Updates** | Discord changelogs and patch notes, newest first, with the source's own image and links |
 | **Experiments** | Write-ups of features being tested, filtered by status or kind, plus a live feed of experiments added or removed in each Discord app update |
 | **Status** | Live Discord status: systems, open incidents, maintenance and past incidents |
@@ -76,7 +76,7 @@ js/theme.js           sets light/dark before the page draws (no inline scripts: 
 js/markdown.js        Discord markdown → safe HTML renderer, plus the message checker
 js/content.js         all site content, including playground templates
 js/live.js            live Discord status and experiment feed
-js/embed.js           embed builder (limits, JSON import, share links, code export, preview, webhook send)
+js/embed.js           embed builder (limits, polls, JSON import, share links, code export, preview, webhook send and edit)
 js/snapshot.js        saves a preview as a PNG
 js/discord.js         permission flags, invite links, ID decoding
 js/app.js             tabs, pages, search, tools, theme switch

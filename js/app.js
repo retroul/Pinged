@@ -113,8 +113,8 @@
 
   function incidentHtml(inc, open) {
     const updates = (inc.incident_updates || []).map((u) =>
-      '<li><b>' + esc(u.status.replace(/_/g, " ")) + "</b> · " + esc(fmtDateTime(u.display_at || u.created_at)) + "<p>" + esc(u.body || "") + "</p></li>").join("");
-    const meta = inc.resolved_at ? "Resolved after " + duration(inc.created_at, inc.resolved_at) : esc(inc.status.replace(/_/g, " "));
+      '<li><b>' + esc(String(u.status || "").replace(/_/g, " ")) + "</b> · " + esc(fmtDateTime(u.display_at || u.created_at)) + "<p>" + esc(u.body || "") + "</p></li>").join("");
+    const meta = inc.resolved_at ? "Resolved after " + duration(inc.created_at, inc.resolved_at) : esc(String(inc.status || "").replace(/_/g, " "));
     const when = inc.scheduled_for
       ? "Scheduled " + fmtDateTime(inc.scheduled_for) + (inc.scheduled_until ? " – " + fmtDateTime(inc.scheduled_until) : "")
       : fmtDate(inc.created_at);
@@ -200,9 +200,14 @@
         '<button class="btn btn-ghost" type="button" id="em-image">Save image</button><button class="btn btn-ghost" type="button" id="em-link">Copy link</button><span class="muted" id="em-note" role="status"></span><span class="grow"></span>' +
         '<span class="inline-group"><label class="sr-only" for="em-lang">Format</label><select id="em-lang">' + EMBED.CODE_LANGS.map(([id, name]) => '<option value="' + id + '">' + name + "</option>").join("") + "</select>" +
         '<button class="btn" type="button" id="em-copy">Copy</button></span></div>' +
+        '<div class="row"><label for="em-draft-name">Save as</label><input id="em-draft-name" class="field field-text" maxlength="60" placeholder="Draft name" autocomplete="off">' +
+        '<button class="btn btn-ghost" type="button" id="em-draft-save">Save draft</button><label class="sr-only" for="em-drafts">Saved drafts</label><select id="em-drafts"></select>' +
+        '<button class="btn btn-ghost" type="button" id="em-draft-delete">Delete draft</button><span class="muted" id="em-draft-note" role="status"></span></div>' +
         '<div class="row webhook-row"><label for="em-hook">Webhook link</label><input id="em-hook" type="password" autocomplete="new-password" placeholder="https://discord.com/api/webhooks/…" spellcheck="false">' +
         '<button class="btn" type="button" id="em-send">Send</button><span class="muted" id="em-sent" role="status"></span></div>' +
-        '<p class="muted small">Server Settings → Integrations → Webhooks → Copy Webhook URL. The link is only used to send this message and is never saved. Anyone with it can post as the webhook, so keep it private.</p></section>' +
+        '<div class="row webhook-row"><label for="em-edit">Message to edit</label><input id="em-edit" type="text" placeholder="Optional: message link" spellcheck="false" autocomplete="off"></div>' +
+        '<p class="muted small">Server Settings → Integrations → Webhooks → Copy Webhook URL. The link is only used to send this message and is never saved. Anyone with it can post as the webhook, so keep it private. ' +
+        'To change a message the webhook already posted, right-click it in Discord, choose Copy Message Link and paste it above: Send then updates that message instead of posting a new one.</p></section>' +
 
         '<section class="tool" id="permissions"><h2>Permissions & invite link</h2><p class="muted">Tick what a role or bot needs, or paste a permission number to see what it allows. Add a client ID to get the link that invites a bot.</p>' +
         '<div class="row"><label for="perm-int">Permission number</label><input id="perm-int" class="field" inputmode="numeric" spellcheck="false" autocomplete="off"><span class="muted" id="perm-note" role="status"></span></div>' +
@@ -304,7 +309,7 @@
     C.experiments.forEach((e) => idx.push({ title: e.name, where: "Experiments · " + statusLabel(e.status), href: "#/experiments/" + slug(e.name),
       text: [e.summary].concat(e.points || [], e.id || "", e.kind || "").join(" ") }));
     C.sources.forEach((g) => g.links.forEach(([label, , note]) => idx.push({ title: label, where: "Sources", href: "#/sources", text: note })));
-    [["Playground", "playground", "write a message and preview it check formatting problems template share link"], ["Embed builder", "embed", "webhook embed json import bot rich message code curl javascript python multiple embeds save image share link"],
+    [["Playground", "playground", "write a message and preview it check formatting problems template share link"], ["Embed builder", "embed", "webhook embed json import bot rich message code curl javascript python multiple embeds save image share link poll vote edit message update drafts character count"],
       ["Message splitter", "splitter", "long message split 2000 characters limit nitro 4000 too long cut pieces"],
       ["Permissions & invite link", "permissions", "permission number integer bitfield bot invite oauth client id administrator"], ["ID decoder", "ids", "snowflake id created date user server channel message"],
       ["Timestamp maker", "timestamps", "time date timezone countdown"], ["Coloured text builder", "colors", "ansi colour color text"]]
@@ -587,6 +592,11 @@
 
   function setupEmbed(shared) {
     const form = $("#em-form");
+    const L = EMBED.LIMITS;
+    const LIMIT_OF = { username: L.username, content: L.content, title: L.title, description: L.description, authorName: L.author, footer: L.footer };
+    // A text box with Discord's limit gets a live "12 / 256" count under it.
+    const limited = (id, max) => (max ? ' data-limit="' + max + '" aria-describedby="' + id + '-count"' : "");
+    const counter = (id, max) => (max ? '<span class="em-count" id="' + id + '-count"></span>' : "");
     let state, keep = true, held = false, sharedError = "";
     try { state = EMBED.normalizeState(JSON.parse(readStore(EMBED_KEY))); } catch (e) { state = EMBED.exampleState(); }
     // Opening someone's link must not overwrite your own saved draft until you start editing,
@@ -605,28 +615,62 @@
     const input = (n, key, label, type) => {
       const owner = n == null ? state : state.embeds[n];
       const id = "em-" + (n == null ? "msg" : n) + "-" + key, v = owner[key];
-      const attrs = ' id="' + id + '" data-key="' + key + '"' + (n == null ? "" : ' data-embed="' + n + '"');
+      const attrs = ' id="' + id + '" data-key="' + key + '"' + (n == null ? "" : ' data-embed="' + n + '"') + limited(id, LIMIT_OF[key]);
       if (type === "check") return '<label class="check"><input type="checkbox"' + attrs + (v ? " checked" : "") + "> " + label + "</label>";
       const ctrl = type === "area" ? "<textarea" + attrs + ' rows="3">' + esc(v) + "</textarea>"
         : "<input" + attrs + ' type="' + (type === "color" ? "color" : type === "url" ? "url" : "text") + '" value="' + esc(v) + '">';
-      return '<label for="' + id + '">' + label + "</label>" + ctrl;
+      return '<label for="' + id + '">' + label + "</label>" + ctrl + counter(id, LIMIT_OF[key]);
     };
     const group = (n, [name, inputs]) => "<fieldset><legend>" + name + "</legend>" + inputs.map((i) => input(n, ...i)).join("") + "</fieldset>";
     const embedForm = (e, n) => {
-      const fields = e.fields.map((f, i) =>
-        '<div class="em-field-edit"><input aria-label="Embed ' + (n + 1) + " field " + (i + 1) + ' name" placeholder="Name" data-embed="' + n + '" data-field="' + i + '" data-prop="name" value="' + esc(f.name) + '">' +
-        '<textarea aria-label="Embed ' + (n + 1) + " field " + (i + 1) + ' value" placeholder="Value" rows="2" data-embed="' + n + '" data-field="' + i + '" data-prop="value">' + esc(f.value) + "</textarea>" +
+      const fields = e.fields.map((f, i) => {
+        const fid = "em-" + n + "-f" + i;
+        return '<div class="em-field-edit"><input id="' + fid + '-name" aria-label="Embed ' + (n + 1) + " field " + (i + 1) + ' name" placeholder="Name" data-embed="' + n + '" data-field="' + i + '" data-prop="name" value="' + esc(f.name) + '"' + limited(fid + "-name", L.fieldName) + ">" +
+        counter(fid + "-name", L.fieldName) +
+        '<textarea id="' + fid + '-value" aria-label="Embed ' + (n + 1) + " field " + (i + 1) + ' value" placeholder="Value" rows="2" data-embed="' + n + '" data-field="' + i + '" data-prop="value"' + limited(fid + "-value", L.fieldValue) + ">" + esc(f.value) + "</textarea>" +
+        counter(fid + "-value", L.fieldValue) +
         '<label class="check"><input type="checkbox" data-embed="' + n + '" data-field="' + i + '" data-prop="inline"' + (f.inline ? " checked" : "") + '> Inline</label>' +
-        '<button type="button" class="btn btn-ghost" data-remove-field="' + i + '" data-embed="' + n + '">Remove field</button></div>').join("");
+        '<button type="button" class="btn btn-ghost" data-remove-field="' + i + '" data-embed="' + n + '">Remove field</button></div>';
+      }).join("");
       return '<section class="em-embed" aria-labelledby="em-h-' + n + '"><div class="em-embed-head"><h3 id="em-h-' + n + '">Embed ' + (n + 1) + "</h3>" +
         (state.embeds.length > 1 ? '<button type="button" class="btn btn-ghost btn-sm" data-remove-embed="' + n + '" aria-label="Remove embed ' + (n + 1) + '">Remove embed</button>' : "") + "</div>" +
         EMBED_FIELDS.map((g) => group(n, g)).join("") +
         "<fieldset><legend>Fields (" + e.fields.length + "/" + EMBED.LIMITS.fields + ")</legend>" + fields +
         '<button type="button" class="btn btn-ghost em-add-field" data-add-field data-embed="' + n + '"' + (e.fields.length >= EMBED.LIMITS.fields ? " disabled" : "") + ">Add field</button></fieldset></section>";
     };
+    const POLL_HOURS = [[1, "1 hour"], [4, "4 hours"], [8, "8 hours"], [24, "1 day"], [72, "3 days"], [168, "1 week"], [336, "2 weeks"], [768, "32 days"]];
+    const pollForm = () => {
+      const p = state.poll;
+      if (!p) return '<fieldset class="em-poll"><legend>Poll</legend><button type="button" class="btn btn-ghost" data-poll-add>Add a poll</button></fieldset>';
+      const hours = POLL_HOURS.some(([h]) => h === p.duration) ? POLL_HOURS : POLL_HOURS.concat([[p.duration, p.duration + " hours"]]);
+      const answers = p.answers.map((a, i) => {
+        const aid = "em-poll-a" + i;
+        return '<div class="em-field-edit em-poll-answer"><input class="em-poll-emoji" aria-label="Answer ' + (i + 1) + ' emoji" placeholder="Emoji" data-poll-answer="' + i + '" data-prop="emoji" value="' + esc(a.emoji) + '">' +
+          '<input id="' + aid + '" aria-label="Answer ' + (i + 1) + '" placeholder="Answer ' + (i + 1) + '" data-poll-answer="' + i + '" data-prop="text" value="' + esc(a.text) + '"' + limited(aid, L.pollAnswer) + ">" +
+          '<button type="button" class="btn btn-ghost btn-sm" data-poll-remove="' + i + '" aria-label="Remove answer ' + (i + 1) + '">Remove</button>' + counter(aid, L.pollAnswer) + "</div>";
+      }).join("");
+      return '<fieldset class="em-poll"><legend>Poll</legend><label for="em-poll-q">Question</label><input id="em-poll-q" type="text" data-poll="question" value="' + esc(p.question) + '"' + limited("em-poll-q", L.pollQuestion) + ">" +
+        counter("em-poll-q", L.pollQuestion) + '<span class="em-sub">Answers (' + p.answers.length + "/" + L.pollAnswers + "). Emoji is optional: paste one, or a custom one like &lt;:name:123&gt;.</span>" + answers +
+        '<button type="button" class="btn btn-ghost em-add-field" data-poll-add-answer' + (p.answers.length >= L.pollAnswers ? " disabled" : "") + ">Add answer</button>" +
+        '<label for="em-poll-time">Open for</label><select id="em-poll-time" data-poll="duration">' + hours.map(([h, name]) => '<option value="' + h + '"' + (h === p.duration ? " selected" : "") + ">" + name + "</option>").join("") + "</select>" +
+        '<label class="check"><input type="checkbox" data-poll="multi"' + (p.multi ? " checked" : "") + "> Allow more than one answer</label>" +
+        '<button type="button" class="btn btn-ghost em-add-field" data-poll-remove-all>Remove poll</button></fieldset>';
+    };
     const drawForm = () => {
       form.innerHTML = group(null, EMBED_MESSAGE) + state.embeds.map(embedForm).join("") +
-        '<button type="button" class="btn btn-ghost" id="em-add-embed"' + (state.embeds.length >= EMBED.LIMITS.embeds ? " disabled" : "") + ">Add embed (" + state.embeds.length + "/" + EMBED.LIMITS.embeds + ")</button>";
+        '<div class="row"><button type="button" class="btn btn-ghost" id="em-add-embed"' + (state.embeds.length >= L.embeds ? " disabled" : "") + ">Add embed (" + state.embeds.length + "/" + L.embeds + ")</button>" +
+        '<span class="em-count" id="em-total"></span></div>' + pollForm();
+    };
+    const drawCounts = () => {
+      form.querySelectorAll("[data-limit]").forEach((c) => {
+        const out = document.getElementById(c.id + "-count");
+        const n = c.value.length, max = Number(c.dataset.limit);
+        out.textContent = n ? n + " / " + max : "";
+        out.classList.toggle("over", n > max);
+      });
+      const total = EMBED.embedTextLength(state), totalOut = $("#em-total");
+      totalOut.textContent = total ? "All embed text: " + total + " / " + L.total : "";
+      totalOut.classList.toggle("over", total > L.total);
     };
     const code = () => EMBED.toCode(EMBED.toPayload(state), $("#em-lang").value);
     const drawPreview = () => {
@@ -639,6 +683,7 @@
       $("#em-errors").innerHTML = errors.map((e) => "<li>" + esc(e) + "</li>").join("");
       $("#em-json").textContent = code();
       $("#em-send").disabled = $("#em-copy").disabled = errors.length > 0;
+      drawCounts();
       if (keep) writeStore(EMBED_KEY, JSON.stringify(state));
     };
     const redraw = () => { drawForm(); drawPreview(); };
@@ -649,6 +694,8 @@
       const t = e.target;
       if (t.dataset.key) owner(t)[t.dataset.key] = t.type === "checkbox" ? t.checked : t.value;
       if (t.dataset.field != null) owner(t).fields[Number(t.dataset.field)][t.dataset.prop] = t.type === "checkbox" ? t.checked : t.value;
+      if (t.dataset.poll) state.poll[t.dataset.poll] = t.type === "checkbox" ? t.checked : t.dataset.poll === "duration" ? Number(t.value) : t.value;
+      if (t.dataset.pollAnswer != null) state.poll.answers[Number(t.dataset.pollAnswer)][t.dataset.prop] = t.value;
       drawPreview();
     });
     form.addEventListener("click", (e) => {
@@ -658,6 +705,10 @@
       else if (btn.dataset.addField != null) owner(btn).fields.push({ name: "", value: "", inline: false });
       else if (btn.dataset.removeEmbed != null) state.embeds.splice(Number(btn.dataset.removeEmbed), 1);
       else if (btn.id === "em-add-embed") state.embeds.push(EMBED.blankEmbed());
+      else if (btn.dataset.pollAdd != null) state.poll = EMBED.blankPoll();
+      else if (btn.dataset.pollRemoveAll != null) state.poll = null;
+      else if (btn.dataset.pollAddAnswer != null) state.poll.answers.push({ text: "", emoji: "" });
+      else if (btn.dataset.pollRemove != null) state.poll.answers.splice(Number(btn.dataset.pollRemove), 1);
       else return;
       edited();
       redraw();
@@ -679,16 +730,75 @@
         note.textContent = "Loaded.";
       } catch (err) { note.textContent = err.message; }
     });
+    const editBox = $("#em-edit");
+    const editRef = () => EMBED.parseMessageRef(editBox.value);
+    editBox.addEventListener("input", () => {
+      $("#em-send").textContent = editRef() ? "Update message" : "Send";
+      $("#em-sent").textContent = editBox.value.trim() && !editRef() ? "That isn't a message link. Right-click the message → Copy Message Link." : "";
+    });
     $("#em-send").addEventListener("click", () => {
       const note = $("#em-sent"), btn = $("#em-send");
+      if (editBox.value.trim() && !editRef()) { note.textContent = "That isn't a message link. Right-click the message → Copy Message Link."; return; }
       btn.disabled = true;
-      note.textContent = "Sending…";
-      EMBED.send($("#em-hook").value, EMBED.toPayload(state))
+      note.textContent = editRef() ? "Updating…" : "Sending…";
+      EMBED.send($("#em-hook").value, state, editRef())
         .then((msg) => { note.textContent = msg; }, (err) => { note.textContent = err.message; })
         .finally(() => { btn.disabled = EMBED.validate(state).length > 0; });
     });
+    setupDrafts(() => state, (next) => { state = next; replaced(); redraw(); });
     redraw();
     if (sharedError) $("#em-note").textContent = sharedError;
+  }
+
+  // Named embed drafts, kept in this browser. A Map, so a draft called "__proto__" is just a name.
+  const DRAFTS_KEY = "pinged.embed.drafts";
+  function setupDrafts(current, open) {
+    const nameBox = $("#em-draft-name"), pick = $("#em-drafts"), del = $("#em-draft-delete"), note = $("#em-draft-note");
+    let drafts;
+    try {
+      const saved = JSON.parse(readStore(DRAFTS_KEY));
+      drafts = new Map(saved && typeof saved === "object" && !Array.isArray(saved) ? Object.entries(saved) : []);
+    } catch (e) { drafts = new Map(); }
+    const draw = (selected) => {
+      const names = Array.from(drafts.keys()).sort((a, b) => a.localeCompare(b));
+      pick.innerHTML = '<option value="">' + (names.length ? "Open a saved draft…" : "No saved drafts yet") + "</option>" +
+        names.map((n) => '<option value="' + esc(n) + '"' + (n === selected ? " selected" : "") + ">" + esc(n) + "</option>").join("");
+      pick.disabled = !names.length;
+      del.disabled = !pick.value;
+    };
+    const persist = () => {
+      try { localStorage.setItem(DRAFTS_KEY, JSON.stringify(Object.fromEntries(drafts))); return true; } catch (e) {
+        note.textContent = "Couldn't save: this browser's storage is full or blocked.";
+        return false;
+      }
+    };
+    $("#em-draft-save").addEventListener("click", () => {
+      const name = nameBox.value.trim();
+      if (!name) { note.textContent = "Give the draft a name first."; nameBox.focus(); return; }
+      if (drafts.has(name) && !confirm("Replace the saved draft “" + name + "”?")) return;
+      const before = drafts.get(name);
+      drafts.set(name, JSON.parse(JSON.stringify(current())));
+      if (!persist()) { if (before) drafts.set(name, before); else drafts.delete(name); return; }
+      draw(name);
+      note.textContent = "Saved “" + name + "”.";
+    });
+    pick.addEventListener("change", () => {
+      del.disabled = !pick.value;
+      if (!pick.value) return;
+      open(EMBED.normalizeState(drafts.get(pick.value)));
+      nameBox.value = pick.value;
+      note.textContent = "Opened “" + pick.value + "”.";
+    });
+    del.addEventListener("click", () => {
+      const name = pick.value;
+      if (!name || !confirm("Delete the saved draft “" + name + "”?")) return;
+      const before = drafts.get(name);
+      drafts.delete(name);
+      if (!persist()) { drafts.set(name, before); return; }
+      draw();
+      note.textContent = "Deleted “" + name + "”.";
+    });
+    draw();
   }
 
   // Saves a preview as a PNG. `note` is a role="status" element that reports what couldn't be included.
@@ -704,10 +814,17 @@
       .finally(() => { btn.disabled = false; btn.textContent = label; });
   }
 
+  // Shows "Copied!" (or why not) on the button, then puts its label back, even after quick repeat clicks.
+  const copyTimers = new WeakMap();
   function copy(text, btn) {
-    const done = () => { const old = btn.textContent; btn.textContent = "Copied!"; setTimeout(() => (btn.textContent = old), 1200); };
-    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, () => (btn.textContent = "Copy failed"));
-    else btn.textContent = "Copy not supported";
+    if (btn.dataset.label == null) btn.dataset.label = btn.textContent;
+    const show = (msg) => {
+      btn.textContent = msg;
+      clearTimeout(copyTimers.get(btn));
+      copyTimers.set(btn, setTimeout(() => (btn.textContent = btn.dataset.label), 1500));
+    };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => show("Copied!"), () => show("Copy failed"));
+    else show("Copy not supported");
   }
 
   /* ---------- Router ---------- */
@@ -737,6 +854,7 @@
     main.innerHTML = name === "search" ? pages.search(safeDecode(sub)) : pages[name]();
     highlight(main);
     document.querySelectorAll(".tabs a").forEach((a) => a.setAttribute("aria-current", a.dataset.page === name ? "page" : "false"));
+    showCurrentTab();
     document.title = (TITLES[name] ? TITLES[name] + " · " : "") + "Pinged: the unofficial Discord field guide";
     if (name !== "search") $("#search").value = "";
     drawTabBadges();
@@ -783,6 +901,23 @@
       $("#search").focus();
     }
   });
+
+  // On narrow screens the tab bar scrolls sideways: keep the current tab in view and fade the edge that has more tabs.
+  const tabBar = $(".tabs");
+  function tabEdges() {
+    tabBar.classList.toggle("more-left", tabBar.scrollLeft > 2);
+    tabBar.classList.toggle("more-right", tabBar.scrollLeft + tabBar.clientWidth < tabBar.scrollWidth - 2);
+  }
+  function showCurrentTab() {
+    const cur = $('.tabs a[aria-current="page"]');
+    if (cur && tabBar.scrollWidth > tabBar.clientWidth) {
+      const left = cur.getBoundingClientRect().left - tabBar.getBoundingClientRect().left + tabBar.scrollLeft;
+      tabBar.scrollLeft = left - (tabBar.clientWidth - cur.offsetWidth) / 2;
+    }
+    tabEdges();
+  }
+  tabBar.addEventListener("scroll", tabEdges, { passive: true });
+  window.addEventListener("resize", tabEdges);
 
   let searchDelay = null;
   $("#search").addEventListener("input", (e) => {

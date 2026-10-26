@@ -158,3 +158,50 @@ test("pictures from a shared link can be held back until the visitor agrees", ()
   assert.doesNotMatch(held, /<img|tracker\.test/);
   assert.match(held, /Title|>t</, "the text still shows");
 });
+
+test("polls build Discord's poll object, survive import and share links, and respect the limits", () => {
+  const state = Object.assign(EMBED.blankState(), { content: "Vote!", poll: {
+    question: "Movie night?", answers: [{ text: "Yes", emoji: "🍿" }, { text: "No", emoji: "<:nope:123456789012345678>" }], duration: 72, multi: true } });
+  assert.deepStrictEqual(EMBED.validate(state), []);
+  const p = EMBED.toPayload(state);
+  assert.deepStrictEqual(p.poll, {
+    question: { text: "Movie night?" }, duration: 72, allow_multiselect: true,
+    answers: [{ poll_media: { text: "Yes", emoji: { name: "🍿" } } }, { poll_media: { text: "No", emoji: { id: "123456789012345678" } } }],
+  });
+  assert.deepStrictEqual(EMBED.toPayload(EMBED.fromPayload(JSON.stringify(p))), p);
+  assert.deepStrictEqual(EMBED.toPayload(EMBED.fromShare(EMBED.toShare(state))), p);
+  assert.ok(EMBED.validate(Object.assign(EMBED.blankState(), { poll: EMBED.blankPoll() })).some((e) => /question/.test(e)), "an empty poll is invalid");
+  const long = Object.assign(EMBED.blankState(), { poll: { question: "q".repeat(301), answers: [{ text: "a".repeat(56), emoji: "" }], duration: 24, multi: false } });
+  const errs = EMBED.validate(long).join(" ");
+  assert.match(errs, /Poll question is 301/);
+  assert.match(errs, /Poll answer 1 is 56/);
+  assert.strictEqual(EMBED.normalizeState({ poll: { question: "x", answers: [], duration: 9999 } }).poll.duration, 24, "bad lengths fall back to a day");
+  const html = EMBED.preview(state, (t) => MD.render(t), MD.escapeHtml);
+  assert.match(html, /class="poll"/);
+  assert.match(EMBED.preview(Object.assign(EMBED.blankState(), { poll: { question: "<b>x</b>", answers: [], duration: 1, multi: false } }), MD.render, MD.escapeHtml), /&lt;b&gt;x/);
+});
+
+test("message links and IDs are read for editing", () => {
+  assert.deepStrictEqual(EMBED.parseMessageRef("https://discord.com/channels/1/22/333333333333333333"), { channelId: "22", messageId: "333333333333333333" });
+  assert.deepStrictEqual(EMBED.parseMessageRef(" 333333333333333333 "), { channelId: null, messageId: "333333333333333333" });
+  assert.strictEqual(EMBED.parseMessageRef("https://evil.test/channels/1/2/3"), null);
+  assert.strictEqual(EMBED.parseMessageRef("12/../webhooks"), null);
+  const edit = EMBED.toEditPayload(Object.assign(EMBED.blankState(), { username: "Bot", embeds: [EMBED.blankEmbed()] }));
+  assert.deepStrictEqual(edit, { content: "", embeds: [] }, "an edit clears what's gone and leaves out name and avatar");
+});
+
+test("editing PATCHes the webhook message, and retries as a thread message when Discord can't find it", async () => {
+  const hook = "https://discord.com/api/webhooks/123456/" + "t".repeat(60);
+  const calls = [];
+  global.fetch = (url, opts) => {
+    calls.push([opts.method, url]);
+    const ok = url.includes("thread_id=22");
+    return Promise.resolve({ ok, status: ok ? 200 : 404, json: () => Promise.resolve({ message: "Unknown Message" }) });
+  };
+  const state = Object.assign(EMBED.blankState(), { content: "new text" });
+  assert.strictEqual(await EMBED.send(hook, state, { channelId: "22", messageId: "333333333333333333" }), "Updated!");
+  assert.deepStrictEqual(calls, [["PATCH", hook + "/messages/333333333333333333"], ["PATCH", hook + "/messages/333333333333333333?thread_id=22"]]);
+  await assert.rejects(EMBED.send(hook, state, { channelId: null, messageId: "333333333333333333" }), /404: Unknown Message/);
+  await assert.rejects(EMBED.send(hook, Object.assign(state, { poll: EMBED.blankPoll() }), { channelId: null, messageId: "1" }), /edit add a poll/);
+  delete global.fetch;
+});
